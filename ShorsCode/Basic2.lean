@@ -15,6 +15,7 @@ noncomputable def l2norm (v : QubitVec) : ℝ :=
 
 @[simp] lemma l2norm_def {v : QubitVec} : l2norm v = ‖v 0‖^2 + ‖v 1‖^2 := rfl
 
+@[ext]
 structure Qubit where
   state : QubitVec
   normalized : l2norm state = 1
@@ -36,8 +37,9 @@ structure QuantumGate where
 
 lemma l2normQubitState (ψ : Qubit) : l2norm ψ.state = 1 := ψ.normalized
 
-noncomputable def applyMatrixVec (U : Matrix (Fin 2) (Fin 2) ℂ) (ψ : QubitVec):=
-fun i => ∑ j, U i j * ψ j
+noncomputable abbrev applyMatrixVec
+  : Matrix (Fin 2) (Fin 2) ℂ → QubitVec → QubitVec :=
+  Matrix.mulVec
 
 lemma l2norm_unitary
     {U : Matrix (Fin 2) (Fin 2) ℂ}
@@ -60,16 +62,12 @@ noncomputable def applyGate (G : QuantumGate) (ψ : Qubit) : Qubit :=
 
 /-- If a matrix is Hermitian and involutary, then it is unitary. -/
 lemma unitary_of_hermitian_involutary
-  {n : ℕ} {U : Matrix (Fin n) (Fin n) ℂ}
-  (hH : Hermitian U) (hI : Involutary U) :
-  (U * Uᴴ = 1) ∧ (Uᴴ * U = 1) := by
-  -- hH : Uᴴ = U, hI : U * U = 1
+  {n : ℕ} {U : Matrix (Fin n) (Fin n) ℂ} (hH : Hermitian U) (hI : Involutary U) :
+(U * Uᴴ = 1) ∧ (Uᴴ * U = 1) := by
   have hH' : Uᴴ = U := hH
   refine ⟨?left, ?right⟩
-  · -- U * Uᴴ = 1
-    simpa [hH'] using hI
-  · -- Uᴴ * U = 1
-    simpa [hH'] using hI
+  · simpa [hH'] using hI
+  · simpa [hH'] using hI
 
 /- Defining the Identity Quantum Gate -/
 lemma id_Hermitian : Hermitian (1 : Matrix (Fin 2) (Fin 2) ℂ) := by simp
@@ -128,15 +126,23 @@ lemma Zmat_involutary : Involutary Zmat := by
   fin_cases i <;> fin_cases j <;>
     simp [Zmat, Matrix.mul_apply]
 
-/-- Pauli Y packaged as a `QuantumGate`. -/
+/-- Pauli Z packaged as a `QuantumGate`. -/
 def Zgate : QuantumGate :=
   { U := Zmat
   , unitary := unitary_of_hermitian_involutary Zmat_hermitian Zmat_involutary
   }
 
-lemma X_on_ket0 : applyGate Xgate ket0 = ket1 := by admit
+lemma X_on_ket0 : applyGate Xgate ket0 = ket1 := by
+  ext x
+  fin_cases x <;>
+      simp [applyGate, Xgate, Xmat, ket0, ket1,
+            applyMatrixVec]
 
-lemma X_on_ket1 : applyGate Xgate ket1 = ket0 := by admit
+lemma X_on_ket1 : applyGate Xgate ket1 = ket0 := by
+  ext x
+  fin_cases x <;>
+      simp [applyGate, Xgate, Xmat, ket0, ket1,
+            applyMatrixVec]
 
 -- TODO: try to get simp to auto-apply everything
 lemma XZ_neg_ZX : Xgate.U * Zgate.U = - (Zgate.U * Xgate.U) := by
