@@ -17,6 +17,9 @@ structure Qubit where
   state : QubitVec
   normalized : l2norm state = 1
 
+instance : CoeTC Qubit QubitVec := ⟨Qubit.state⟩
+@[simp] lemma coe_Qubit (ψ : Qubit) : (ψ : QubitVec) = ψ.state := rfl
+
 def ket0 : Qubit :=
   { state := ![1, 0],
     normalized := by simp }
@@ -32,7 +35,7 @@ structure QuantumGate where
   U : Matrix (Fin 2) (Fin 2) ℂ
   unitary : Unitary U
 
-lemma l2normQubitState (ψ : Qubit) : l2norm ψ.state = 1 := ψ.normalized
+lemma l2normQubitState (ψ : Qubit) : l2norm ψ = 1 := ψ.normalized
 
 noncomputable abbrev applyMatrixVec
   : Matrix (Fin 2) (Fin 2) ℂ → QubitVec → QubitVec :=
@@ -46,9 +49,9 @@ lemma l2norm_unitary
 abbrev i := Complex.I
 
 noncomputable def applyGate (G : QuantumGate) (ψ : Qubit) : Qubit :=
-  { state := applyMatrixVec G.U ψ.state,
+  { state := applyMatrixVec G.U ψ,
     normalized := by
-      have := l2norm_unitary G.unitary ψ.state
+      have := l2norm_unitary G.unitary ψ
       rw [← l2normQubitState ψ]
       exact this
   }
@@ -91,8 +94,7 @@ lemma Xmat_involutary : Involutary Xmat := by
 /-- Pauli X packaged as a `QuantumGate`. -/
 def Xgate : QuantumGate :=
   { U := Xmat
-  , unitary := unitary_of_hermitian_involutary Xmat_hermitian Xmat_involutary
-  }
+  , unitary := unitary_of_hermitian_involutary Xmat_hermitian Xmat_involutary}
 
 /- Creating the Pauli Y Quantum Gate -/
 def Ymat : Matrix (Fin 2) (Fin 2) ℂ := !![0, -i; i, 0]
