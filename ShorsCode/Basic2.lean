@@ -1,12 +1,9 @@
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
-import Mathlib.Data.Matrix.Mul
-import Mathlib.Analysis.Matrix
 import Mathlib.Tactic
 
-open Matrix Complex
-open scoped BigOperators ComplexConjugate
+open Matrix
 
 abbrev QubitVec := Fin 2 → ℂ
 
@@ -46,7 +43,7 @@ lemma l2norm_unitary
     (hU : Unitary U) :
     ∀ v : QubitVec, l2norm (applyMatrixVec U v) = l2norm v := sorry
 
-abbrev i := I
+abbrev i := Complex.I
 
 noncomputable def applyGate (G : QuantumGate) (ψ : Qubit) : Qubit :=
   { state := applyMatrixVec G.U ψ.state,
