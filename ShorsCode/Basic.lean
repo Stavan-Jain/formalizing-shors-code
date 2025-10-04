@@ -5,29 +5,31 @@ import Mathlib.Tactic
 
 open Matrix
 
-abbrev QubitVec := Fin 2 → ℂ
+abbrev QVec (n : ℕ):= Fin n → ℂ
 
 noncomputable def normsq {n : ℕ} (v : Fin n → ℂ) : ℝ :=
 ∑ i, ‖v i‖^2
 
-@[simp] lemma normsq_def {v : QubitVec} : normsq v = ∑ i, ‖v i‖^2 := rfl
+@[simp] lemma normsq_def {n : ℕ} {v : Fin n → ℂ} : normsq v = ∑ i, ‖v i‖^2 := rfl
 
 @[ext]
-structure Qubit where
-  state : QubitVec
-  normalized : normsq state = 1
-
 structure QState (n : ℕ) where
   state : Fin (2^n) → ℂ
   normalized : normsq state = 1
 
+abbrev Qubit := QState 1
+
 -- Allows us to treat a qubit as a qubit.vec
-instance : CoeTC Qubit QubitVec := ⟨Qubit.state⟩
-@[simp] lemma coe_Qubit (ψ : Qubit) : (ψ : QubitVec) = ψ.state := rfl
+instance : CoeTC  Qubit (QVec 2) := ⟨QState.state⟩
+@[simp] lemma coe_Qubit (ψ : Qubit) : (ψ : QVec 2) = ψ.state := rfl
+
+-- Allows us to treat a qubit as a qubit.vec
+instance {n : ℕ} : CoeTC  (QState n) (QVec (2 ^ n)) := ⟨QState.state⟩
+@[simp] lemma coe_QState {n : ℕ} (ψ : QState n) : (ψ : QVec (2 ^ n)) = ψ.state := rfl
 
 def ket0 : Qubit :=
   { state := ![1, 0],
-    normalized := by simp }
+    normalized := by simp}
 
 def ket1 : Qubit :=
   { state := ![0, 1],
@@ -47,13 +49,13 @@ instance : CoeTC QuantumGate (Matrix (Fin 2) (Fin 2) ℂ) := ⟨QuantumGate.U⟩
 lemma normsqQubitState (ψ : Qubit) : normsq ψ.state = 1 := ψ.normalized
 
 noncomputable abbrev applyMatrixVec
-  : Matrix (Fin 2) (Fin 2) ℂ → QubitVec → QubitVec :=
+  : Matrix (Fin 2) (Fin 2) ℂ → QVec 2 → QVec 2 :=
   Matrix.mulVec
 
 lemma normsq_unitary
     {U : Matrix (Fin 2) (Fin 2) ℂ}
     (hU : Unitary U) :
-    ∀ v : QubitVec, normsq (applyMatrixVec U v) = normsq v := sorry
+    ∀ v : QVec 2, normsq (applyMatrixVec U v) = normsq v := sorry
 
 abbrev i := Complex.I
 
