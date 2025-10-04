@@ -7,15 +7,19 @@ open Matrix
 
 abbrev QubitVec := Fin 2 → ℂ
 
-noncomputable def lnorm {n : ℕ} (v : Fin n → ℂ) : ℝ :=
-Real.sqrt (∑ i, ‖v i‖^2)
+noncomputable def normsq {n : ℕ} (v : Fin n → ℂ) : ℝ :=
+∑ i, ‖v i‖^2
 
-@[simp] lemma norm_def {v : QubitVec} : lnorm v = Real.sqrt (∑ i, ‖v i‖^2) := rfl
+@[simp] lemma normsq_def {v : QubitVec} : normsq v = ∑ i, ‖v i‖^2 := rfl
 
 @[ext]
 structure Qubit where
   state : QubitVec
-  normalized : lnorm state = 1
+  normalized : normsq state = 1
+
+structure QState (n : ℕ) where
+  state : Fin (2^n) → ℂ
+  normalized : normsq state = 1
 
 -- Allows us to treat a qubit as a qubit.vec
 instance : CoeTC Qubit QubitVec := ⟨Qubit.state⟩
@@ -40,24 +44,24 @@ structure QuantumGate where
 instance : CoeTC QuantumGate (Matrix (Fin 2) (Fin 2) ℂ) := ⟨QuantumGate.U⟩
 @[simp] lemma coe_QuantumGate (Q : QuantumGate) : (Q : Matrix (Fin 2) (Fin 2) ℂ) = Q.U := rfl
 
-lemma lnormQubitState (ψ : Qubit) : lnorm ψ.state = 1 := ψ.normalized
+lemma normsqQubitState (ψ : Qubit) : normsq ψ.state = 1 := ψ.normalized
 
 noncomputable abbrev applyMatrixVec
   : Matrix (Fin 2) (Fin 2) ℂ → QubitVec → QubitVec :=
   Matrix.mulVec
 
-lemma lnorm_unitary
+lemma normsq_unitary
     {U : Matrix (Fin 2) (Fin 2) ℂ}
     (hU : Unitary U) :
-    ∀ v : QubitVec, lnorm (applyMatrixVec U v) = lnorm v := sorry
+    ∀ v : QubitVec, normsq (applyMatrixVec U v) = normsq v := sorry
 
 abbrev i := Complex.I
 
 noncomputable def applyGate (G : QuantumGate) (ψ : Qubit) : Qubit :=
   { state := applyMatrixVec G.U ψ,
     normalized := by
-      have := lnorm_unitary G.unitary ψ
-      rw [← lnormQubitState ψ]
+      have := normsq_unitary G.unitary ψ
+      rw [← normsqQubitState ψ]
       exact this
   }
 
