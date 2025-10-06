@@ -4,6 +4,9 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import ShorsCode.Basic
 
+/- This file implements `tensorState ψ φ`, which returns the tensor product
+   of `QState`s ψ and φ -/
+
 lemma pow2_pos (r : ℕ) : 0 < 2 ^ r := Nat.pow_pos (by decide)
 
 /-- given `k : Fin (2^(n+m))`,
@@ -21,48 +24,50 @@ def splitIndex {n m : ℕ} (k : Fin (2 ^ (n + m))) :
       -- proof: remainder is always < divisor
       Nat.mod_lt k.val (pow2_pos m) ⟩)
 
+/-- Defines the data (vector) of the tensor product -/
 def tensorVec {n m : ℕ}
-  (v : Fin (2 ^ n) → ℂ) (w : Fin (2 ^ m) → ℂ) :
+  (ψ : Fin (2 ^ n) → ℂ) (φ : Fin (2 ^ m) → ℂ) :
   Fin (2^(n+m)) → ℂ :=
   fun k =>
     let ij := splitIndex k
-    v ij.1 * w ij.2
+    ψ ij.1 * φ ij.2
 
 open scoped BigOperators
 
-/-- Tensor product of two normalized quantum states. -/
+/-- Tensor product of two `QState`s ψ and φ. -/
 def tensorState {n m : ℕ}
   (ψ : QState n) (φ : QState m) :
   QState (n + m) :=
 { state := tensorVec ψ.state φ.state,
   normalized := by
     classical
-  -- start from the *definition* of vector norm
   -- (this line just unfolds `normsq` for a vector)
     change (∑ k, ‖(tensorVec ψ.state φ.state) k‖^2) = 1
     -- Compute ∑ |ψ⊗φ|² and show it equals 1
       -- rewrite each term using the definition of tensorVec
   -- and the fact ‖a*b‖ = ‖a‖ * ‖b‖ for complex numbers
     have step1 :
-      (∑ k, ‖(tensorVec ψ.state φ.state) k‖^2)
-        =
-      ∑ k,
-        (‖ψ.state (splitIndex k).1‖^2) *
-        (‖φ.state (splitIndex k).2‖^2) := by
-        classical
-      apply Finset.sum_congr rfl
-      intro k _
-      -- use: (abs (a*b))^2 = (abs a)^2 * (abs b)^2
-      have hnorm :
-        ‖ψ.state (splitIndex k).1 * φ.state (splitIndex k).2‖
-          = ‖ψ.state (splitIndex k).1‖
-            * ‖φ.state (splitIndex k).2‖ := by
-        simpa using Complex.abs.mul
-          (ψ.state (splitIndex n m k).1)
-          (φ.state (splitIndex n m k).2)
-      -- square both sides; use pow_two and mul_pow
-      simp [tensorVec, pow_two, mul_comm, mul_left_comm, mul_assoc]
+        (∑ k, ‖(tensorVec ψ.state φ.state) k‖^2)
+          =
+        ∑ k,
+          (‖ψ.state (splitIndex k).1‖^2) *
+          (‖φ.state (splitIndex k).2‖^2) := by
+          classical
+        apply Finset.sum_congr rfl
+        intro k _
+        -- use: (abs (a*b))^2 = (abs a)^2 * (abs b)^2
+        have hnorm :
+          ‖ψ.state (splitIndex k).1 * φ.state (splitIndex k).2‖
+            = ‖ψ.state (splitIndex k).1‖
+              * ‖φ.state (splitIndex k).2‖ := by
+          simpa using Complex.abs.mul
+            (ψ.state (splitIndex n m k).1)
+            (φ.state (splitIndex n m k).2)
+        -- square both sides; use pow_two and mul_pow
+        simp [tensorVec, pow_two, mul_comm, mul_left_comm, mul_assoc]
     rw [step1]
+    unfold splitIndex at *
+    simp at *
     sorry
     }
 

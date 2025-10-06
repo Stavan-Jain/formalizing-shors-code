@@ -14,16 +14,16 @@ noncomputable def normsq {n : ℕ} (v : Fin n → ℂ) : ℝ :=
 
 @[ext]
 structure QState (n : ℕ) where
-  state : Fin (2^n) → ℂ
-  normalized : normsq state = 1
+  state : Fin (2^n) → ℂ         -- a complex vector of length 2ⁿ
+  normalized : normsq state = 1 -- a proof that `state` is normalized
 
 abbrev Qubit := QState 1
 
--- Allows us to treat a qubit as a qubit.vec
+-- Allows us to treat a `Qubit` as a `QVec 2`
 instance : CoeTC  Qubit (QVec 2) := ⟨QState.state⟩
 @[simp] lemma coe_Qubit (ψ : Qubit) : (ψ : QVec 2) = ψ.state := rfl
 
--- Allows us to treat a qubit as a qubit.vec
+-- Allows us to treat a `QState n` as a `QVec 2ⁿ`
 instance {n : ℕ} : CoeTC  (QState n) (QVec (2 ^ n)) := ⟨QState.state⟩
 @[simp] lemma coe_QState {n : ℕ} (ψ : QState n) : (ψ : QVec (2 ^ n)) = ψ.state := rfl
 
@@ -164,7 +164,7 @@ lemma XZ_neg_ZX : Xgate.U * Zgate.U = - (Zgate.U * Xgate.U) := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [Xgate, Xmat, Zgate, Zmat]
 
--- TODO : Prove that X as a gate is involutary
+-- Prove that X as a gate is involutary
 lemma X_involutary' (ψ : Qubit) :
     applyGate Xgate (applyGate Xgate ψ) = ψ := by
     ext x
