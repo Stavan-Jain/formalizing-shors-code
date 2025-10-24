@@ -3,68 +3,56 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 
+namespace Quantum
 open Matrix
 
-abbrev QVec (n : ℕ):= Fin n → ℂ
+abbrev Vector (n : ℕ):= Fin n → ℂ
 
-noncomputable def normsq {n : ℕ} (v : Fin n → ℂ) : ℝ :=
-∑ i, ‖v i‖^2
+noncomputable def norm {n : ℕ} (v : Vector n) := Real.sqrt (∑ i, ‖v i‖^2)
 
-@[simp] lemma normsq_def {n : ℕ} {v : Fin n → ℂ} : normsq v = ∑ i, ‖v i‖^2 := rfl
+@[simp] lemma norm_def {n : ℕ} {v : Vector n} : norm v =
+Real.sqrt (∑ i, ‖v i‖^2) := rfl
 
-@[ext]
-structure QState (n : ℕ) where
-  state : Fin (2^n) → ℂ         -- a complex vector of length 2ⁿ
-  normalized : normsq state = 1 -- a proof that `state` is normalized
+abbrev QuantumState (n : ℕ) := {v : Fin (2^n) → ℂ // norm v = 1}
 
-abbrev Qubit := QState 1
+-- Coerce a quantum state to its underlying vector
+instance {n : ℕ} : CoeTC (QuantumState n) (Vector (2^n)) := ⟨Subtype.val⟩
+@[simp] lemma coe_val_QState {n} (ψ : QuantumState n) : ((ψ : Vector (2^n)) = ψ.val) := rfl
 
--- Allows us to treat a `Qubit` as a `QVec 2`
-instance : CoeTC  Qubit (QVec 2) := ⟨QState.state⟩
-@[simp] lemma coe_Qubit (ψ : Qubit) : (ψ : QVec 2) = ψ.state := rfl
+abbrev Qubit := QuantumState 1
 
--- Allows us to treat a `QState n` as a `QVec 2ⁿ`
-instance {n : ℕ} : CoeTC  (QState n) (QVec (2 ^ n)) := ⟨QState.state⟩
-@[simp] lemma coe_QState {n : ℕ} (ψ : QState n) : (ψ : QVec (2 ^ n)) = ψ.state := rfl
+def ket0 : Qubit := ⟨![1, 0], by simp⟩
 
-def ket0 : Qubit :=
-  { state := ![1, 0],
-    normalized := by simp}
+def ket1 : Qubit := ⟨![0, 1], by simp⟩
 
-def ket1 : Qubit :=
-  { state := ![0, 1],
-    normalized := by simp}
+lemma ketPlusNorm1 : norm (![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]) = 1 := by
+  have h : (2⁻¹ : ℝ) + 2⁻¹ = 1 := by grind
+  simp
+  exact h
 
-def Unitary (U : Matrix (Fin 2) (Fin 2) ℂ) : Prop :=
+noncomputable def ketPlus : Qubit := ⟨(![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]), ketPlusNorm1⟩
+
+def Unitary {n : ℕ} (U : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) ℂ) : Prop :=
   (U * Uᴴ = 1) ∧ (Uᴴ * U = 1)
 
-structure QuantumGate where
-  U : Matrix (Fin 2) (Fin 2) ℂ
-  unitary : Unitary U
+abbrev QuantumGate (n : ℕ):= {U : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) ℂ // Unitary U}
 
--- Allows us to treat a qubit as a qubit.vec
-instance : CoeTC QuantumGate (Matrix (Fin 2) (Fin 2) ℂ) := ⟨QuantumGate.U⟩
-@[simp] lemma coe_QuantumGate (Q : QuantumGate) : (Q : Matrix (Fin 2) (Fin 2) ℂ) = Q.U := rfl
+instance {n : ℕ} : CoeTC (QuantumGate n) (Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) ℂ) := ⟨Subtype.val⟩
+@[simp] lemma coe_val_Qgate {n} (ψ : QuantumState n) : ((ψ : Vector (2^n)) = ψ.val) := rfl
 
-lemma normsqQubitState (ψ : Qubit) : normsq ψ.state = 1 := ψ.normalized
-
-noncomputable abbrev applyMatrixVec
-  : Matrix (Fin 2) (Fin 2) ℂ → QVec 2 → QVec 2 :=
+noncomputable abbrev applyMatrixVec {n : ℕ}
+  : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) ℂ → Vector (2 ^ n) → Vector (2 ^ n) :=
   Matrix.mulVec
 
-lemma normsq_unitary
-    {U : Matrix (Fin 2) (Fin 2) ℂ}
-    (hU : Unitary U) :
-    ∀ v : QVec 2, normsq (applyMatrixVec U v) = normsq v := sorry
+lemma unitary_preserves_norm {n : ℕ} {U : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) ℂ} (hU : Unitary U) :
+∀ v : Vector (2 ^ n), norm (applyMatrixVec U v) = norm v := sorry
 
-abbrev i := Complex.I
-
-noncomputable def applyGate (G : QuantumGate) (ψ : Qubit) : Qubit :=
-  { state := applyMatrixVec G.U ψ,
-    normalized := by
-      have := normsq_unitary G.unitary ψ
-      rw [← normsqQubitState ψ]
-      exact this
+noncomputable def applyGate {n : ℕ} (G : QuantumGate n) (ψ : QuantumState n) : QuantumState n :=
+  { val := applyMatrixVec G.val ψ.val,
+    property := by
+      have h := unitary_preserves_norm G.property ψ.val
+      rw [h]
+      exact ψ.property
   }
 
 def Hermitian {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Prop := Mᴴ = M
@@ -90,10 +78,9 @@ lemma id_Hermitian : Hermitian (1 : Matrix (Fin 2) (Fin 2) ℂ) := by simp
 
 lemma id_Involutary : Involutary (1 : Matrix (Fin 2) (Fin 2) ℂ) := by simp
 
-/-- Identity matrix packaged as a `QuantumGate`. -/
-def Igate : QuantumGate :=
-  { U := 1
-  , unitary := unitary_of_hermitian_involutary id_Hermitian id_Involutary
+def Igate : QuantumGate 1:=
+  { val := 1
+  , property := unitary_of_hermitian_involutary id_Hermitian id_Involutary
   }
 
 /- Creating the Pauli X Quantum Gate -/
@@ -108,10 +95,11 @@ lemma Xmat_involutary : Involutary Xmat := by
     simp [Xmat, Matrix.mul_apply]
 
 /-- Pauli X packaged as a `QuantumGate`. -/
-def Xgate : QuantumGate :=
-  { U := Xmat
-  , unitary := unitary_of_hermitian_involutary Xmat_hermitian Xmat_involutary}
+def Xgate : QuantumGate 1:=
+  { val := Xmat
+  , property := unitary_of_hermitian_involutary Xmat_hermitian Xmat_involutary}
 
+abbrev i := Complex.I
 /- Creating the Pauli Y Quantum Gate -/
 def Ymat : Matrix (Fin 2) (Fin 2) ℂ := !![0, -i; i, 0]
 
@@ -125,9 +113,9 @@ lemma Ymat_involutary : Involutary Ymat := by
     simp [Ymat, Matrix.mul_apply]
 
 /-- Pauli Y packaged as a `QuantumGate`. -/
-def Ygate : QuantumGate :=
-  { U := Ymat
-  , unitary := unitary_of_hermitian_involutary Ymat_hermitian Ymat_involutary
+def Ygate : QuantumGate 1:=
+  { val := Ymat
+  , property := unitary_of_hermitian_involutary Ymat_hermitian Ymat_involutary
   }
 
 /- Creating the Pauli Z Quantum Gate -/
@@ -142,29 +130,26 @@ lemma Zmat_involutary : Involutary Zmat := by
     simp [Zmat, Matrix.mul_apply]
 
 /-- Pauli Z packaged as a `QuantumGate`. -/
-def Zgate : QuantumGate :=
-  { U := Zmat
-  , unitary := unitary_of_hermitian_involutary Zmat_hermitian Zmat_involutary
+def Zgate : QuantumGate 1 :=
+  { val := Zmat
+  , property := unitary_of_hermitian_involutary Zmat_hermitian Zmat_involutary
   }
 
--- Maybe add these as simp lemmas?
 lemma X_on_ket0 : applyGate Xgate ket0 = ket1 := by
   ext x
   fin_cases x <;>
       simp [applyGate, Xgate, Xmat, ket0, ket1,
             applyMatrixVec]
-
 lemma X_on_ket1 : applyGate Xgate ket1 = ket0 := by
   ext x
   fin_cases x <;>
       simp [applyGate, Xgate, Xmat, ket0, ket1,
             applyMatrixVec]
 
-lemma XZ_neg_ZX : Xgate.U * Zgate.U = - (Zgate.U * Xgate.U) := by
+lemma XZ_neg_ZX : Xgate.val * Zgate.val = - (Zgate.val * Xgate.val) := by
   ext i j
   fin_cases i <;> fin_cases j <;> simp [Xgate, Xmat, Zgate, Zmat]
 
--- Prove that X as a gate is involutary
 lemma X_involutary' (ψ : Qubit) :
     applyGate Xgate (applyGate Xgate ψ) = ψ := by
     ext x
@@ -173,4 +158,50 @@ lemma X_involutary' (ψ : Qubit) :
     rw [Involutary_def] at this
     rw [mulVec_mulVec, this, one_mulVec]
 
--- TODO: Prove that Unitary * Unitary = Unitary
+#check Matrix.conjTranspose_mul
+
+noncomputable def gateProduct {n : ℕ} (Q1 : QuantumGate n) (Q2 : QuantumGate n) : QuantumGate n :=
+{
+  val := Q1.val * Q2.val
+  property := by
+    constructor
+    · rw [Matrix.conjTranspose_mul]
+      have h1 := Q1.property.1
+      have h2 := Q2.property.1
+      unfold Unitary at *
+      simp [mul_assoc]
+      have h : Q1.val * (Q2.val * ((Q2.val)ᴴ * (Q1.val)ᴴ)) = Q1.val * (Q2.val *
+      (Q2.val)ᴴ) * (Q1.val)ᴴ := by grind
+      rw [h, h2, mul_one]
+      exact h1
+    · rw [Matrix.conjTranspose_mul]
+      have h1 := Q1.property.2
+      have h2 := Q2.property.2
+      have h : Q2.valᴴ * (Q1.val)ᴴ * (Q1.val * ((Q2.val))) =
+      Q2.valᴴ * ((Q1.val)ᴴ * Q1.val) * ((Q2.val)) := by grind
+      rw [h, h1, mul_one]
+      exact h2
+}
+
+#check Matrix.mul_inv_eq_iff_eq_mul_of_invertible
+lemma unitary_eq_conjugate_transpose {n : ℕ} (Q : QuantumGate n) :
+  Q.val = ((Q.val)ᴴ)⁻¹ := by
+  have := Q.property.1
+  calc
+    -- need Q.val invertible
+    Q.val = Q.val * (Q.valᴴ * ((Q.val)ᴴ)⁻¹) := sorry
+    Q.val * (Q.valᴴ * ((Q.val)ᴴ)⁻¹) = (Q.val * Q.valᴴ) * ((Q.val)ᴴ)⁻¹ := by grind
+  rw [this, one_mul]
+
+
+
+noncomputable def gateInverse {n : ℕ} (Q : QuantumGate n)
+: QuantumGate n :=
+{
+  val := (Q.val)⁻¹
+  property := by
+    unfold Unitary
+    sorry
+    -- constructor
+}
+end Quantum
