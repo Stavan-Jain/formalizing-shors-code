@@ -2,9 +2,7 @@
 
 This project formalizes foundational concepts in quantum error correction using the Lean 4 proof assistant, building toward a complete formalization of **Shor’s 9-qubit error-correcting code**.
 
-Along the way, it develops **reusable components and lemmas** for reasoning about qubits, quantum states, and unitary operations.
-
-
+Along the way, it develops **definitions and lemmas** for reasoning about qubits, quantum states, and unitary operations.
 
 ## Overview
 
