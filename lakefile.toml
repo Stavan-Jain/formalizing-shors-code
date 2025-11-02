@@ -16,3 +16,7 @@ scope = "leanprover-community"
 
 [[lean_lib]]
 name = "ShorsCode"
+
+[[lean_lib]]
+name = "Foundations"
+srcDir = "ShorsCode"
