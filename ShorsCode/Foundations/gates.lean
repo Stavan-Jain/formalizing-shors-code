@@ -30,6 +30,10 @@ noncomputable def applyGate {n : ℕ} (G : QuantumGate n) (ψ : QuantumState n) 
       exact ψ.property
   }
 
+noncomputable instance instHMulGateState {n : ℕ}
+  : HMul (QuantumGate n) (QuantumState n) (QuantumState n) :=
+⟨applyGate⟩
+
 def Hermitian {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Prop := Mᴴ = M
 
 @[simp] lemma Hermitian_def {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Hermitian M ↔ Mᴴ = M := Iff.rfl
@@ -57,6 +61,16 @@ def Igate : QuantumGate 1:=
   { val := 1
   , property := unitary_of_hermitian_involutary id_Hermitian id_Involutary
   }
+
+lemma I_Hermitian {n : ℕ} : Hermitian (1 : Matrix (Fin (2^n)) (Fin (2^n)) ℂ) := by simp
+
+lemma I_Involutary {n : ℕ} : Involutary (1 : Matrix (Fin (2^n)) (Fin (2^n)) ℂ) := by simp
+
+def I {n : ℕ} : QuantumGate n :=
+{
+  val := 1
+  property := unitary_of_hermitian_involutary I_Hermitian I_Involutary
+}
 
 /- Creating the Pauli X Quantum Gate -/
 def Xmat : Matrix (Fin 2) (Fin 2) ℂ := !![0, 1; 1, 0]
@@ -164,23 +178,74 @@ instance {n : ℕ} (U : QuantumGate n) : Invertible U.val :=
   mul_invOf_self := by exact (U.property).1
 }
 
-
-#check Matrix.mul_inv_eq_iff_eq_mul_of_invertible
-lemma unitary_eq_conjugate_transpose {n : ℕ} (Q : QuantumGate n) :
-  Q.val = ((Q.val)ᴴ)⁻¹ := by
-  have := Q.property.1
-  calc
-    -- need Q.val invertible
-    Q.val = Q.val * (Q.valᴴ * ((Q.val)ᴴ)⁻¹) := sorry
-    Q.val * (Q.valᴴ * ((Q.val)ᴴ)⁻¹) = (Q.val * Q.valᴴ) * ((Q.val)ᴴ)⁻¹ := by grind
-  rw [this, one_mul]
+instance {n : ℕ} (U : QuantumGate n) : Invertible (U.val)ᴴ :=
+{
+  invOf := (U.val)
+  invOf_mul_self := by exact (U.property).1
+  mul_invOf_self := by exact (U.property).2
+}
 
 noncomputable def gateInverse {n : ℕ} (Q : QuantumGate n)
 : QuantumGate n :=
 {
-  val := (Q.val)⁻¹
+  val := (Q.val)ᴴ
   property := by
     unfold Unitary
-    sorry
-    -- constructor
+    simp
+    constructor
+    · exact Q.property.2
+    · exact Q.property.1
 }
+
+noncomputable instance {n : ℕ} : Inv (QuantumGate n) :=
+⟨fun U => ⟨gateInverse U, (gateInverse U).property⟩⟩
+
+noncomputable instance {n : ℕ} : Mul (QuantumGate n) :=
+{
+  mul := gateProduct
+}
+
+noncomputable instance {n : ℕ} : Group (QuantumGate n) :=
+{
+  mul_assoc := sorry
+  one := I
+  one_mul := sorry
+  mul_one := sorry
+  inv_mul_cancel := sorry
+}
+
+example {n : ℕ} (U: QuantumGate n) : U⁻¹ * U = I := by sorry
+
+-- lemma X_inv {n : ℕ }: X⁻¹ = X := by
+
+/- 2-qubit CNOT, with basis ordering |00>,|01>,|10>,|11>.
+   Control = most-significant qubit (the first qubit), target = second. -/
+def CNOTmat : Matrix (Fin 4) (Fin 4) ℂ :=
+  !![ 1, 0, 0, 0
+    ; 0, 1, 0, 0
+    ; 0, 0, 0, 1
+    ; 0, 0, 1, 0 ]
+
+lemma CNOT_hermitian : Hermitian CNOTmat := by
+  -- real permutation matrix = symmetric = Hermitian
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [CNOTmat]
+
+lemma CNOT_involutary : Involutary CNOTmat := by
+  -- CNOT ⬝ CNOT = I₄
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [CNOTmat, Matrix.mul_apply, Fin.sum_univ_four]
+
+/-- CNOT packaged as a `QuantumGate 2`. -/
+def CNOT : QuantumGate 2 :=
+{ val := CNOTmat
+, property := unitary_of_hermitian_involutary CNOT_hermitian CNOT_involutary }
+
+/-- CNOT as a block matrix on `Fin 2 ⊕ Fin 2`. This might be useful later on -/
+def CNOT_blocks : Matrix (Fin 2 ⊕ Fin 2) (Fin 2 ⊕ Fin 2) ℂ :=
+  Matrix.fromBlocks (Igate) 0 0 Xmat
+
+example : CNOT * ket00 = ket00 := by sorry
+
+end Quantum
