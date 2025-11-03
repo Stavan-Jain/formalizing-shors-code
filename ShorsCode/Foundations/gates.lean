@@ -157,6 +157,13 @@ noncomputable def gateProduct {n : ℕ} (Q1 : QuantumGate n) (Q2 : QuantumGate n
       rw [h, h1, mul_one]
       exact h2
 }
+instance {n : ℕ} (U : QuantumGate n) : Invertible U.val :=
+{
+  invOf := (U.val)ᴴ
+  invOf_mul_self := by exact (U.property).2
+  mul_invOf_self := by exact (U.property).1
+}
+
 
 #check Matrix.mul_inv_eq_iff_eq_mul_of_invertible
 lemma unitary_eq_conjugate_transpose {n : ℕ} (Q : QuantumGate n) :
