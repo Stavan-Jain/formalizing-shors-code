@@ -25,6 +25,14 @@ def ket0 : Qubit := ⟨![1, 0], by simp⟩
 
 def ket1 : Qubit := ⟨![0, 1], by simp⟩
 
+def ket00 : QuantumState 2 := ⟨![1, 0, 0, 0], by simp [Fin.sum_univ_four]⟩
+
+def ket01 : QuantumState 2 := ⟨![0, 1, 0, 0], by simp [Fin.sum_univ_four]⟩
+
+def ket10 : QuantumState 2 := ⟨![0, 0, 1, 0], by simp [Fin.sum_univ_four]⟩
+
+def ket11 : QuantumState 2 := ⟨![0, 0, 0, 1], by simp [Fin.sum_univ_four]⟩
+
 lemma ketPlusNorm1 : norm (![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]) = 1 := by
   have h : (2⁻¹ : ℝ) + 2⁻¹ = 1 := by grind
   simp
