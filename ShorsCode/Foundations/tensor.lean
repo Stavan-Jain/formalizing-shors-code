@@ -4,9 +4,10 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import ShorsCode.Foundations.Basic
 
+#check Matrix.kronecker
 /- This file implements `tensorState ψ φ`, which returns the tensor product
    of `QState`s ψ and φ -/
-
+namespace Quantum
 lemma pow2_pos (r : ℕ) : 0 < 2 ^ r := Nat.pow_pos (by decide)
 
 /-- given `k : Fin (2^(n+m))`,
@@ -34,45 +35,13 @@ def tensorVec {n m : ℕ}
 
 open scoped BigOperators
 
+-- TODO: fill in proof that tensorState is normalized
 /-- Tensor product of two `QState`s ψ and φ. -/
 def tensorState {n m : ℕ}
-  (ψ : QState n) (φ : QState m) :
-  QState (n + m) :=
-{ state := tensorVec ψ.state φ.state,
-  normalized := by
-    classical
-  -- (this line just unfolds `normsq` for a vector)
-    change (∑ k, ‖(tensorVec ψ.state φ.state) k‖^2) = 1
-    -- Compute ∑ |ψ⊗φ|² and show it equals 1
-      -- rewrite each term using the definition of tensorVec
-  -- and the fact ‖a*b‖ = ‖a‖ * ‖b‖ for complex numbers
-    have step1 :
-        (∑ k, ‖(tensorVec ψ.state φ.state) k‖^2)
-          =
-        ∑ k,
-          (‖ψ.state (splitIndex k).1‖^2) *
-          (‖φ.state (splitIndex k).2‖^2) := by
-          classical
-        apply Finset.sum_congr rfl
-        intro k _
-        -- use: (abs (a*b))^2 = (abs a)^2 * (abs b)^2
-        have hnorm :
-          ‖ψ.state (splitIndex k).1 * φ.state (splitIndex k).2‖
-            = ‖ψ.state (splitIndex k).1‖
-              * ‖φ.state (splitIndex k).2‖ := by
-          simpa using Complex.abs.mul
-            (ψ.state (splitIndex n m k).1)
-            (φ.state (splitIndex n m k).2)
-        -- square both sides; use pow_two and mul_pow
-        simp [tensorVec, pow_two, mul_comm, mul_left_comm, mul_assoc]
-    rw [step1]
-    unfold splitIndex at *
-    simp at *
-    sorry
-    }
+  (ψ : QuantumState n) (φ : QuantumState m) :
+  QuantumState (n + m) := ⟨tensorVec ψ φ, by sorry⟩
 
-
-
+#check tensorState ket0 ket1
 
 /-- Combine `(i, j)` into a single index `k = i * 2^m + j`. -/
 def combineIndex {n m : ℕ} (p : Fin (2 ^ n) × Fin (2 ^ m)) :
