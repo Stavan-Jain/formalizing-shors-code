@@ -15,7 +15,7 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
 > ```
 ---
 
-## 🧩 Module Structure
+## Module Structure
 
 | Module | Purpose |
 |:-------|:--------|
@@ -42,6 +42,7 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
 - Defined applyGate: applying a QuantumGate to a QuantumState 
 - Proved that X |0⟩ = |1⟩ and X |1⟩ = |0⟩
 - Defined gateProduct: composing two QuantumGates
+- Implemented CNOT
 
 ---
 
@@ -58,7 +59,6 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
   - [ ] Prove that QuantumGates are invertible
   - [ ] Prove that that the identity matrix is the group identity
 - [ ] Implement Hadamard (H)
-- [ ] Implement CNOT
 - [ ] Prove that unitary matrices preserve norms
 
 ### 3. `Quantum.Code.Repetition3`
@@ -75,12 +75,12 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
 
 ---
 
-## 🔬 Future Extensions
+## Future Extensions
 
 - [ ] Extend to **phase-flip code** (Z errors)  
 - [ ] Compose both into **Shor’s 9-qubit code**  
 
 ---
 
-## 🧱 File Layout Suggestion
+## File Layout Suggestion
 
