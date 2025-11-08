@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
-import ShorsCode.Foundations.Basic
+import ShorsCode.Foundations.basic
 
 #check Matrix.kronecker
 /- This file implements `tensorState ψ φ`, which returns the tensor product
