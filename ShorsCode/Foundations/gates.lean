@@ -124,6 +124,35 @@ def Z : QuantumGate 1 :=
   , property := unitary_of_hermitian_involutary Zmat_hermitian Zmat_involutary
   }
 
+/- Define 1/√2 and a lemma for use in the Hadamard gate -/
+noncomputable def invsqrt2 : ℂ := 1 / (Real.sqrt 2)
+
+lemma invsqrt2_sq : invsqrt2 * invsqrt2 = 1 / 2 := by
+  unfold invsqrt2
+  have hpos : 0 < Real.sqrt 2 := Real.sqrt_pos.mpr (by norm_num)
+  have h2 : (Real.sqrt 2 : ℂ) ≠ 0 := by
+    exact_mod_cast (ne_of_gt hpos)
+  field_simp [Real.sqrt, h2]
+  norm_cast
+  simp
+
+/- Creating the H (Hadamard) Quantum Gate -/
+noncomputable def Hmat : Matrix (Fin 2) (Fin 2) ℂ :=
+  invsqrt2 • !![1, 1; 1, -1]
+lemma Hmat_involutary : Involutary Hmat := by
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [Hmat, Matrix.mul_apply, invsqrt2_sq,]; all_goals ring
+lemma Hmat_hermitian : Hermitian Hmat := by
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [Hmat, invsqrt2];
+
+/- H packaged as a `QuantumGate`. -/
+noncomputable def H : QuantumGate 1 :=
+{ val := Hmat
+, property := unitary_of_hermitian_involutary Hmat_hermitian Hmat_involutary
+}
+
 lemma X_on_ket0 : applyGate X ket0 = ket1 := by
   ext x
   fin_cases x <;>

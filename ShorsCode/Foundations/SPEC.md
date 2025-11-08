@@ -39,6 +39,7 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
 **Quantum.Gates**
 - `Unitary` and `QuantumGate` definitions  
 - Implemented Pauli gates: X, Y, Z
+- Implemented Hadamard gate
 - Defined applyGate: applying a QuantumGate to a QuantumState 
 - Proved that X |0⟩ = |1⟩ and X |1⟩ = |0⟩
 - Defined gateProduct: composing two QuantumGates
@@ -58,7 +59,6 @@ The final theorem will state that this code can **correct a single bit-flip (Pau
 - [ ] Prove that QuantumGate is a group under multiplication
   - [ ] Prove that QuantumGates are invertible
   - [ ] Prove that that the identity matrix is the group identity
-- [ ] Implement Hadamard (H)
 - [ ] Prove that unitary matrices preserve norms
 
 ### 3. `Quantum.Code.Repetition3`
