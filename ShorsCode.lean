@@ -1,1 +1,1 @@
-import ShorsCode.Basic
+import ShorsCode.Foundations.basic
