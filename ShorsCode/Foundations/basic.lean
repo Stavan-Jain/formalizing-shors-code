@@ -13,7 +13,7 @@ noncomputable def norm {n : ℕ} (v : Vector n) := Real.sqrt (∑ i, ‖v i‖^2
 @[simp] lemma norm_def {n : ℕ} {v : Vector n} : norm v =
 Real.sqrt (∑ i, ‖v i‖^2) := rfl
 
-abbrev QuantumState (n : ℕ) := {v : Fin (2^n) → ℂ // norm v = 1}
+abbrev QuantumState (n : ℕ) := {v : Vector (2 ^ n) // norm v = 1}
 
 -- Coerce a quantum state to its underlying vector
 instance {n : ℕ} : CoeTC (QuantumState n) (Vector (2^n)) := ⟨Subtype.val⟩

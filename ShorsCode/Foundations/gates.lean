@@ -219,7 +219,7 @@ example {n : ℕ} (U: QuantumGate n) : U⁻¹ * U = I := by sorry
 -- lemma X_inv {n : ℕ }: X⁻¹ = X := by
 
 /- 2-qubit CNOT, with basis ordering |00>,|01>,|10>,|11>.
-   Control = most-significant qubit (the first qubit), target = second. -/
+   Control = the first qubit, target = second. -/
 def CNOTmat : Matrix (Fin 4) (Fin 4) ℂ :=
   !![ 1, 0, 0, 0
     ; 0, 1, 0, 0
@@ -227,7 +227,6 @@ def CNOTmat : Matrix (Fin 4) (Fin 4) ℂ :=
     ; 0, 0, 1, 0 ]
 
 lemma CNOT_hermitian : Hermitian CNOTmat := by
-  -- real permutation matrix = symmetric = Hermitian
   ext i j
   fin_cases i <;> fin_cases j <;> simp [CNOTmat]
 
