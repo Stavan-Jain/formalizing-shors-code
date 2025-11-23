@@ -124,13 +124,14 @@ by
   rw [ψ.property] at h
   exact h
 
-def Hermitian {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+def Hermitian {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) : Prop :=
   Mᴴ = M
 
-@[simp] lemma Hermitian_def {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) :
+@[simp] lemma Hermitian_def {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) :
   Hermitian M ↔ Mᴴ = M := Iff.rfl
 
-def Involutary {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+def Involutary {α : Type*} [Fintype α] [DecidableEq α]
+  (M : Matrix α α ℂ) : Prop :=
   M * M = 1
 
 @[simp] lemma Involutary_def {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) :
@@ -139,7 +140,8 @@ def Involutary {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : Prop :=
 /-- If a matrix is Hermitian and involutary, then it is unitary (in the sense U
 Uᴴ = 1 and Uᴴ U = 1). -/
 lemma unitary_of_hermitian_involutary
-  {n : ℕ} {U : Matrix (Fin n) (Fin n) ℂ}
+  {α : Type*} [Fintype α] [DecidableEq α]
+  {U : Matrix α α ℂ}
   (hH : Hermitian U) (hI : Involutary U) :
   (U * Uᴴ = 1) ∧ (Uᴴ * U = 1) := by
   have hH' : Uᴴ = U := hH

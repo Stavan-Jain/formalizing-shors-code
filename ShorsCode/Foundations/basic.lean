@@ -29,6 +29,8 @@ instance :
 abbrev QubitBasis : Type := Fin 2
 
 abbrev Qubit := QuantumState QubitBasis
+abbrev QubitState : Type := QuantumState QubitBasis
+abbrev QubitVec := QubitBasis → ℂ
 
 def ket0 : Qubit := ⟨![1, 0], by simp⟩
 
@@ -44,6 +46,12 @@ noncomputable def basisVec (i0 : α) : Vector α :=
 @[simp] lemma basisVec_apply {α : Type*} [DecidableEq α] [Fintype α] (a x : α) :
   basisVec a x = (if x = a then 1 else 0) :=
 by simp[basisVec]
+
+@[simp] lemma dot_basisVec_left
+  {α} [Fintype α] [DecidableEq α] (v : α → ℂ) (i : α) :
+  (v ⬝ᵥ basisVec i) = v i := by
+  classical
+  simp [dotProduct, basisVec]
 
 
 open scoped BigOperators
