@@ -41,6 +41,11 @@ abbrev TwoQubit : Type := QuantumState TwoQubitBasis
 noncomputable def basisVec (i0 : α) : Vector α :=
   fun i => if i = i0 then (1 : ℂ) else 0
 
+@[simp] lemma basisVec_apply {α : Type*} [DecidableEq α] [Fintype α] (a x : α) :
+  basisVec a x = (if x = a then 1 else 0) :=
+by simp[basisVec]
+
+
 lemma norm_basisVec (i0 : α) :
   norm (basisVec i0) = 1 := by
   classical

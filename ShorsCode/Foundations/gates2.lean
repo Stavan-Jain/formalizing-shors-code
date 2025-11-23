@@ -50,6 +50,33 @@ macro_rules
       <;> try ring_nf
       ))
 
+open Lean.Parser.Tactic in
+open Lean in
+/--
+`vec_expand` proves equalities between small vectors (functions on a finite type)
+by extensionality on the index, doing `fin_cases` and `simp` with optional rules.
+
+Usage:
+`vec_expand` or `vec_expand [h1, h2, *]`.
+-/
+syntax (name := vec_expand) "vec_expand"
+  (" [" ((simpStar <|> simpErase <|> simpLemma),*,?) "]")? : tactic
+
+macro_rules
+  | `(tactic| vec_expand $[[$rules,*]]?) => do
+    let rules' := rules.getD ⟨#[]⟩
+    `(tactic| (
+      -- Turn vector equality into pointwise equality
+      ext i
+      -- For small index types like `Fin n` / `QubitBasis`
+      -- this case-splits all possibilities.
+      try fin_cases i
+      <;> simp [$rules',*]
+      <;> norm_num
+      <;> try field_simp
+      <;> try ring_nf
+    ))
+
 
 noncomputable abbrev applyMatrixVec' {α : Type*}
   [Fintype α] [DecidableEq α] :
@@ -174,16 +201,10 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
 
 lemma X_on_ket0 : applyGate X ket0 = ket1 := by
-  ext x
-  fin_cases x <;>
-      simp [applyGate, X, Xmat, ket0, ket1,
-            applyMatrixVec]
+  vec_expand [applyGate, X, Xmat, ket0, ket1, applyMatrixVec]
 
 lemma X_on_ket1 : applyGate X ket1 = ket0 := by
-  ext x
-  fin_cases x <;>
-      simp [applyGate, X, Xmat, ket0, ket1,
-            applyMatrixVec]
+  vec_expand [applyGate, X, Xmat, ket0, ket1, applyMatrixVec]
 
 -- Controlled version of a gate `g` on `k`, acting on `QubitBasis × k`.
 noncomputable def controllize
@@ -220,14 +241,47 @@ noncomputable def CNOT : TwoQubitGate :=
 
 open Matrix
 
+@[simp] lemma ket00_apply
+  (q : QubitBasis) (t : QubitBasis) :
+  (ket00 : QuantumState TwoQubitBasis).val (q, t)
+    = (if (q, t) = (0, 0) then (1 : ℂ) else 0) :=
+by
+  -- whatever `rfl` / `simp` matches your actual definition of `ket00`
+  -- e.g. if ket00 is a basis vector state at (0,0),
+  -- this is likely just `rfl` after unfolding.
+  simp [ket00, basisVec]
+
+
 lemma CNOT_on_ket00 : applyGate CNOT ket00 = ket00 := by
-  -- we'll fill this in
+  classical
+  -- vector extensionality on the `(q,t)` basis
   ext x
-  cases x with
-  | _ q1 q2 =>
-      fin_cases q1
-      <;> fin_cases q2
-      <;> sorry -- simp [applyGate, CNOT, controllize, ket00, basisVec, applyMatrixVec]
+  rcases x with ⟨q, t⟩
+  -- two qubits: `q, t : QubitBasis = Fin 2`
+  fin_cases q <;> fin_cases t
+  all_goals
+    -- unfold everything and let `simp`/`norm_num` clean it up
+    unfold applyGate
+    unfold applyMatrixVec
+
+    simp [Matrix.mulVec, basisVec,
+          CNOT, controllize, X, Xmat, ket00]
+    classical
+    have hfun :
+    (fun j ↦ if j.1 = 0 then if 0 = j.2 then 1 else 0 else 0)
+      = (fun j ↦ if j = (0, 0) then 1 else 0) := by
+      funext j
+      cases j with
+      | _ q t =>
+        grind
+    simp [dotProduct, basisVec]
+
+
+
+
+#check Matrix.dotProductᵣ
+
+
 
 
 end Quantum
