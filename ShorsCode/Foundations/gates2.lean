@@ -108,14 +108,9 @@ lemma unitary_of_hermitian_involutary
 /- Pauli X matrix -/
 def Xmat : Matrix QubitBasis QubitBasis ℂ := !![0, 1; 1, 0]
 
-lemma Xmat_hermitian : Hermitian Xmat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> simp [Xmat]
+lemma Xmat_hermitian : Hermitian Xmat := by matrix_expand[Xmat]
 
-lemma Xmat_involutary : Involutary Xmat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [Xmat, Matrix.mul_apply]
+lemma Xmat_involutary : Involutary Xmat := by matrix_expand[Xmat]
 
 lemma Xmat_mem_unitaryGroup :
   Xmat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
@@ -136,14 +131,9 @@ noncomputable def X : OneQubitGate :=
 def Ymat : Matrix QubitBasis QubitBasis ℂ :=
   !![0, -Complex.I; Complex.I, 0]
 
-lemma Ymat_hermitian : Hermitian Ymat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> simp [Ymat]
+lemma Ymat_hermitian : Hermitian Ymat := by matrix_expand[Ymat]
 
-lemma Ymat_involutary : Involutary Ymat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [Ymat, Matrix.mul_apply]
+lemma Ymat_involutary : Involutary Ymat := by matrix_expand[Ymat]
 
 /-- `Ymat` is unitary in mathlib's sense. -/
 lemma Ymat_mem_unitaryGroup :
@@ -162,14 +152,9 @@ noncomputable def Y : OneQubitGate :=
 def Zmat : Matrix QubitBasis QubitBasis ℂ :=
   !![1, 0; 0, -1]
 
-lemma Zmat_hermitian : Hermitian Zmat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;> simp [Zmat]
+lemma Zmat_hermitian : Hermitian Zmat := by matrix_expand[Zmat]
 
-lemma Zmat_involutary : Involutary Zmat := by
-  ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [Zmat, Matrix.mul_apply]
+lemma Zmat_involutary : Involutary Zmat := by matrix_expand[Zmat]
 
 /-- `Zmat` is unitary in mathlib's sense. -/
 lemma Zmat_mem_unitaryGroup :
@@ -232,4 +217,17 @@ scoped notation "C[" g "]" => controllize g
 noncomputable def CNOT : TwoQubitGate :=
   C[X]
   -- i.e. controllize X, with k = QubitBasis
+
+open Matrix
+
+lemma CNOT_on_ket00 : applyGate CNOT ket00 = ket00 := by
+  -- we'll fill this in
+  ext x
+  cases x with
+  | _ q1 q2 =>
+      fin_cases q1
+      <;> fin_cases q2
+      <;> sorry -- simp [applyGate, CNOT, controllize, ket00, basisVec, applyMatrixVec]
+
+
 end Quantum
