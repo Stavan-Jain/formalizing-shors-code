@@ -35,7 +35,7 @@ def ket0 : Qubit := ⟨![1, 0], by simp⟩
 def ket1 : Qubit := ⟨![0, 1], by simp⟩
 
 abbrev TwoQubitBasis : Type := QubitBasis × QubitBasis
-abbrev TwoQubit : Type := QuantumState TwoQubitBasis
+abbrev TwoQubitState : Type := QuantumState TwoQubitBasis
 
 -- The "constructor" for basis vectors
 noncomputable def basisVec (i0 : α) : Vector α :=
@@ -46,25 +46,44 @@ noncomputable def basisVec (i0 : α) : Vector α :=
 by simp[basisVec]
 
 
-lemma norm_basisVec (i0 : α) :
-  norm (basisVec i0) = 1 := by
-  classical
-  -- we'll prove this later by expanding the sum
-  admit
+open scoped BigOperators
 
-noncomputable def ket00 : TwoQubit :=
+lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
+  norm (basisVec i0 : α → ℂ) = 1 := by
+  classical
+  -- First show the sum of squared entries is 1.
+  have hsum :
+      (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ) = 1 := by
+    -- Replace each summand by a simple real-valued `if`.
+    have hstep :
+        (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ)
+          = ∑ x : α, (if x = i0 then (1 : ℝ) else 0) := by
+      refine Finset.sum_congr rfl ?_
+      intro x _
+      by_cases h : x = i0
+      · subst h
+        simp [basisVec]          -- ‖1‖^2 = 1
+      · simp [basisVec, h]       -- ‖0‖^2 = 0
+    -- Now the sum of this indicator is just 1.
+    simp [basisVec] at hstep
+    exact hstep                -- `simp` evaluates the sum-of-ite to 1
+  -- Now use the definition of `norm`.
+  simp [norm]
+  exact hsum
+
+noncomputable def ket00 : TwoQubitState :=
   ⟨ basisVec ((0, 0) : TwoQubitBasis),
     by simpa using norm_basisVec ((0, 0) : TwoQubitBasis) ⟩
 
-noncomputable def ket01 : TwoQubit :=
+noncomputable def ket01 : TwoQubitState :=
   ⟨ basisVec ((0, 1) : TwoQubitBasis),
     by simpa using norm_basisVec ((0, 1) : TwoQubitBasis) ⟩
 
-noncomputable def ket10 : TwoQubit :=
+noncomputable def ket10 : TwoQubitState :=
   ⟨ basisVec ((1, 0) : TwoQubitBasis),
     by simpa using norm_basisVec ((1, 0) : TwoQubitBasis) ⟩
 
-noncomputable def ket11 : TwoQubit :=
+noncomputable def ket11 : TwoQubitState :=
   ⟨ basisVec ((1, 1) : TwoQubitBasis),
     by simpa using norm_basisVec ((1, 1) : TwoQubitBasis) ⟩
 
