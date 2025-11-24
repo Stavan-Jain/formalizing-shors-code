@@ -74,9 +74,9 @@ lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
       · simp [basisVec, h]       -- ‖0‖^2 = 0
     -- Now the sum of this indicator is just 1.
     simp [basisVec] at hstep
-    exact hstep                -- `simp` evaluates the sum-of-ite to 1
+    exact hstep
   -- Now use the definition of `norm`.
-  simp [norm]
+  simp only [norm, basisVec_apply, Real.sqrt_eq_one]
   exact hsum
 
 noncomputable def ket00 : TwoQubitState :=

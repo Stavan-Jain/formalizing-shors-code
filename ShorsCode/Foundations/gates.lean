@@ -17,10 +17,6 @@ abbrev OneQubitGate : Type :=
 
 abbrev TwoQubitGate : Type := QuantumGate TwoQubitBasis
 
--- Change this later when I generalize QuantumStates
-abbrev NQubitGate (n : ℕ) :=
-  QuantumGate (Fin (2^n))
-
 open Lean.Parser.Tactic in
 open Lean in
 /--
@@ -77,8 +73,9 @@ open Lean.Parser.Tactic in
 open Lean in
 /--
 `vec_expand_simp [rules]`:
-- runs `vec_expand` (ext + case-split),
-- then solves each goal with `simp [rules]`.
+
+Proves goals equating `QuantumState`s by calling `vec_expand` and
+then solving each goal with `simp[rules]`
 -/
 syntax (name := vec_expand_simp) "vec_expand_simp"
   (" [" ((simpStar <|> simpErase <|> simpLemma),*,?) "]")? : tactic
@@ -112,6 +109,8 @@ by
   -- we'll prove this later using the fact that G is unitary
   admit
 
+-- TODO: add simp lemma for applyGate and possibly notation
+
 noncomputable def applyGate
   {α : Type*} [Fintype α] [DecidableEq α]
   (G : QuantumGate α) (ψ : QuantumState α) :
@@ -134,7 +133,7 @@ def Involutary {α : Type*} [Fintype α] [DecidableEq α]
   (M : Matrix α α ℂ) : Prop :=
   M * M = 1
 
-@[simp] lemma Involutary_def {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) :
+@[simp] lemma Involutary_def {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) :
   Involutary M ↔ M * M = 1 := Iff.rfl
 
 /-- If a matrix is Hermitian and involutary, then it is unitary (in the sense U
@@ -218,10 +217,13 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
 
 lemma X_on_ket0 : applyGate X ket0 = ket1 := by
-  vec_expand_simp [applyGate, X, Xmat, ket0, ket1, applyMatrixVec]
+  vec_expand_simp [applyGate, Xmat, ket0, ket1, applyMatrixVec]
 
 lemma X_on_ket1 : applyGate X ket1 = ket0 := by
-  vec_expand_simp [applyGate, X, Xmat, ket0, ket1, applyMatrixVec]
+  vec_expand_simp [applyGate, Xmat, ket0, ket1, applyMatrixVec]
+
+-- TODO: add `simp` lemma for controllize
+-- TODO: make controllize more general
 
 -- Controlled version of a gate `g` on `k`, acting on `QubitBasis × k`.
 noncomputable def controllize
@@ -229,7 +231,7 @@ noncomputable def controllize
   (g : QuantumGate k) : QuantumGate (QubitBasis × k) :=
 by
   classical
-  refine ⟨
+  exact ⟨
     -- underlying matrix
     Matrix.of (fun (q₁, t₁) (q₂, t₂) =>
       if (q₁, q₂) = (0, 0) then
@@ -242,11 +244,7 @@ by
         -- off-diagonal blocks: zero
         0)
     ,
-    -- proof this matrix is unitary (fill in later)
     by
-      -- Goal: the above matrix is in Matrix.unitaryGroup (QubitBasis × k) ℂ
-      -- This will use Matrix.mem_unitaryGroup_iff and the unitarity of g.
-      -- We’ll come back and prove this carefully later.
       rw [Matrix.mem_unitaryGroup_iff]
       matrix_expand [-Complex.ext_iff] with ti tj;
       · congr 1
@@ -260,32 +258,27 @@ noncomputable def CNOT : TwoQubitGate :=
   C[X]
   -- i.e. controllize X, with k = QubitBasis
 
-open Matrix
-
 @[simp] lemma ket00_apply
   (q : QubitBasis) (t : QubitBasis) :
   (ket00 : QuantumState TwoQubitBasis).val (q, t)
     = (if (q, t) = (0, 0) then (1 : ℂ) else 0) :=
 by
-  -- whatever `rfl` / `simp` matches your actual definition of `ket00`
-  -- e.g. if ket00 is a basis vector state at (0,0),
-  -- this is likely just `rfl` after unfolding.
-  simp [ket00, basisVec]
+  simp [ket00]
 
 lemma CNOT_on_ket00 : applyGate CNOT ket00 = ket00 := by
-  vec_expand_simp [applyGate, applyMatrixVec, Matrix.mulVec, dotProduct,
-                   CNOT, controllize, ket00, basisVec]
+  vec_expand_simp [applyGate, Matrix.mulVec, dotProduct,
+                   CNOT, controllize, ket00]
 
 lemma CNOT_on_ket01 : applyGate CNOT ket01 = ket01 := by
-  vec_expand_simp[applyGate, applyMatrixVec, Matrix.mulVec, dotProduct,
+  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
               CNOT, controllize, ket01]
 
 lemma CNOT_on_ket10 : applyGate CNOT ket10 = ket11 := by
-  vec_expand_simp[applyGate, applyMatrixVec, Matrix.mulVec, dotProduct,
+  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
               CNOT, controllize, ket10, ket11, Xmat]
 
 lemma CNOT_on_ket11 : applyGate CNOT ket11 = ket10 := by
-  vec_expand_simp[applyGate, applyMatrixVec, Matrix.mulVec, dotProduct,
+  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
               CNOT, controllize, ket10, ket11, Xmat]
 
 end Quantum

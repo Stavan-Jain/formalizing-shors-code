@@ -89,19 +89,8 @@ def X_L : LogicalQubit → LogicalQubit
   | zeroL => oneL
   | oneL  => zeroL
 
-/-- Logical Z operator on the logical *basis*:
-    on pure basis states, Z_L acts like the identity on the label.
-    (The physically relevant phase on |1_L⟩ will show up when we work with
-    superpositions α|0_L⟩ + β|1_L⟩, not at the level of this label type.) -/
-def Z_L : LogicalQubit → LogicalQubit
-  | zeroL => zeroL
-  | oneL  => oneL
-
 @[simp] lemma X_L_zeroL : X_L zeroL = oneL := rfl
 @[simp] lemma X_L_oneL : X_L oneL  = zeroL := rfl
-
-@[simp] lemma Z_L_zeroL : Z_L zeroL = zeroL := rfl
-@[simp] lemma Z_L_oneL : Z_L oneL  = oneL  := rfl
 
 /-- Logical X on states: acts on basis labels via `X_L`, then interprets as a
     3-qubit state. At this level, this is just a specification function; later
@@ -109,11 +98,6 @@ def Z_L : LogicalQubit → LogicalQubit
 noncomputable def X_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
   toState (X_L ℓ)
 
-/-- Logical Z on states: acts on basis labels via `Z_L`, then interprets as
-    a 3-qubit state. Again, this is a semantic specification, not yet a
-    concrete gate on all three qubits. -/
-noncomputable def Z_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
-  toState (Z_L ℓ)
 
 @[simp] lemma X_L_on_zeroL_state :
   X_L_state zeroL = Quantum.oneL := by
@@ -122,14 +106,6 @@ noncomputable def Z_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
 @[simp] lemma X_L_on_oneL_state :
   X_L_state oneL = Quantum.zeroL := by
   simp [X_L_state]
-
-@[simp] lemma Z_L_on_zeroL_state :
-  Z_L_state zeroL = Quantum.zeroL := by
-  simp [Z_L_state]
-
-@[simp] lemma Z_L_on_oneL_state :
-  Z_L_state oneL = Quantum.oneL := by
-  simp [Z_L_state]
 
 /-- Every logical basis state lies in the repetition codespace. -/
 @[simp] lemma toState_InRepetitionCode (ℓ : LogicalQubit) :
@@ -141,14 +117,9 @@ noncomputable def Z_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
   InRepetitionCode (X_L_state ℓ) := by
   cases ℓ <;> simp [X_L_state]
 
-/-- Logical Z maps codewords to codewords (stays in the codespace). -/
-@[simp] lemma Z_L_state_InRepetitionCode (ℓ : LogicalQubit) :
-  InRepetitionCode (Z_L_state ℓ) := by
-  cases ℓ <;> simp [Z_L_state]
-
 end LogicalQubit
 
--- It's probably better to construct these using tensor products
+-- It's better to construct these using tensor products but I will deal with that later
 noncomputable def X_L_phys_mat :
   Matrix ThreeQubitBasis ThreeQubitBasis ℂ :=
   fun i j =>
@@ -185,6 +156,15 @@ by
   -- TODO: prove unitarity of X_L_phys_mat
   sorry
 
+
+
+
+-- ## Semantic Encode
+/-
+I want to actually create a quantum circuit that does this
+encoding. This is just semantics:
+a mathematical map from a 1-qubit state to a 3-qubit codeword.-/
+
 noncomputable def encodeVec (v : QubitVec) : ThreeQubitVec :=
   fun ijk =>
     if _ : ijk = (0, 0, 0) then
@@ -196,16 +176,7 @@ noncomputable def encodeVec (v : QubitVec) : ThreeQubitVec :=
 
 lemma encodeVec_norm (v : QubitVec) :
   norm (encodeVec v) = norm v := by
-  -- The sum over ThreeQubitBasis has only two nonzero terms (000 and 111),
-  -- and those terms are exactly ‖v 0‖² and ‖v 1‖².
-  -- So the norms are equal.
-  -- proof outline:
-  --   unfold norm
-  --   simp [encodeVec, Finset.sum_filter, ...]  -- you'll need a case analysis on ijk
-  sorry
-
--- ## Semantic Encode
-/- a mathematical map from a 1-qubit state to a 3-qubit codeword.-/
+  admit
 
 noncomputable def encode_state (ψ : QubitState) : ThreeQubitState :=
   ⟨encodeVec ψ.val, by
@@ -229,16 +200,7 @@ noncomputable def encode_state (ψ : QubitState) : ThreeQubitState :=
 
 lemma encode_state_in_code (ψ : QubitState) :
   InRepetitionCode (encode_state ψ) := by
-  -- show that encode_state ψ is in span{zeroL.val, oneL.val}
-  -- encode_state ψ is literally (ψ.val 0) • zeroL.val + (ψ.val 1) • oneL.val
-  -- so:
-  have : encode_state ψ =
-    (ψ.val 0) • zeroL.val + (ψ.val 1) • oneL.val := by
-    -- prove equality of functions; use `encodeVec` unfolding
-    simp [encode_state]
-    sorry
-  -- then use `this` and the definition of span
-  sorry
+  admit
 
 namespace LogicalQubit
 
