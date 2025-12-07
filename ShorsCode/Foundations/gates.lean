@@ -108,8 +108,6 @@ by
   -- we'll prove this later using the fact that G is unitary
   admit
 
--- TODO: add simp lemma for applyGate and possibly notation
-
 noncomputable def applyGate
   {α : Type*} [Fintype α] [DecidableEq α]
   (G : QuantumGate α) (ψ : QuantumState α) :
@@ -121,6 +119,36 @@ by
   have h := gate_preserves_norm G ψ.val
   rw [ψ.property] at h
   exact h
+
+@[simp] lemma applyGate_val
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) (ψ : QuantumState α) :
+  (applyGate G ψ).val = Matrix.mulVec (G.val) ψ.val := rfl
+
+@[simp] lemma applyGate_coe
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) (ψ : QuantumState α) :
+  (applyGate G ψ : Vector α) = Matrix.mulVec (G.val) ψ := rfl
+
+noncomputable instance smul_Vector_by_QuantumGate
+  {α : Type*} [Fintype α] [DecidableEq α] :
+  SMul (QuantumGate α) (Vector α) :=
+{ smul := fun U v => Matrix.mulVec (U.val) v }
+
+noncomputable instance smul_QuantumState_by_QuantumGate
+  {α : Type*} [Fintype α] [DecidableEq α] :
+  SMul (QuantumGate α) (QuantumState α) :=
+{ smul := applyGate }
+
+@[simp] lemma smul_val
+  {α} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) (ψ : QuantumState α) :
+  (G • ψ : Vector α) = Matrix.mulVec (G.val) ψ := rfl
+
+@[simp] lemma smul_QState_val
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) (ψ : QuantumState α) :
+  (G • ψ).val = Matrix.mulVec (G.val) ψ.val := rfl
 
 def Hermitian {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) : Prop :=
   Mᴴ = M
@@ -213,11 +241,11 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_Y : (Y : Matrix QubitBasis QubitBasis ℂ) = Ymat := rfl
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
 
-lemma X_on_ket0 : applyGate X ket0 = ket1 := by
-  vec_expand_simp [applyGate, Xmat, ket0, ket1, applyMatrixVec]
+lemma X_on_ket0 : X • ket0 = ket1 := by
+  vec_expand_simp [Xmat, ket0, ket1]
 
-lemma X_on_ket1 : applyGate X ket1 = ket0 := by
-  vec_expand_simp [applyGate, Xmat, ket0, ket1, applyMatrixVec]
+lemma X_on_ket1 : X • ket1 = ket0 := by
+  vec_expand_simp [Xmat, ket0, ket1]
 
 -- TODO: add `simp` lemma for controllize
 -- TODO: make controllize more general
@@ -262,20 +290,16 @@ noncomputable def CNOT : TwoQubitGate :=
 by
   simp [ket00]
 
-lemma CNOT_on_ket00 : applyGate CNOT ket00 = ket00 := by
-  vec_expand_simp [applyGate, Matrix.mulVec, dotProduct,
-                   CNOT, controllize, ket00]
+lemma CNOT_on_ket00 : CNOT • ket00 = ket00 := by
+  vec_expand_simp [Matrix.mulVec, CNOT, controllize, ket00]
 
-lemma CNOT_on_ket01 : applyGate CNOT ket01 = ket01 := by
-  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
-              CNOT, controllize, ket01]
+lemma CNOT_on_ket01 : CNOT • ket01 = ket01 := by
+  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket01]
 
-lemma CNOT_on_ket10 : applyGate CNOT ket10 = ket11 := by
-  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
-              CNOT, controllize, ket10, ket11, Xmat]
+lemma CNOT_on_ket10 : CNOT • ket10 = ket11 := by
+  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket10, ket11, Xmat]
 
-lemma CNOT_on_ket11 : applyGate CNOT ket11 = ket10 := by
-  vec_expand_simp[applyGate, Matrix.mulVec, dotProduct,
-              CNOT, controllize, ket10, ket11, Xmat]
+lemma CNOT_on_ket11 : CNOT • ket11 = ket10 := by
+  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket10, ket11, Xmat]
 
 end Quantum
