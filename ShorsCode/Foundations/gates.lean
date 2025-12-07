@@ -247,7 +247,6 @@ lemma X_on_ket0 : X • ket0 = ket1 := by
 lemma X_on_ket1 : X • ket1 = ket0 := by
   vec_expand_simp [Xmat, ket0, ket1]
 
--- TODO: add `simp` lemma for controllize
 -- TODO: make controllize more general
 
 -- Controlled version of a gate `g` on `k`, acting on `QubitBasis × k`.
@@ -278,6 +277,19 @@ by
   ⟩
 scoped notation "C[" g "]" => controllize g
 
+@[simp] lemma controllize_val
+  {k : Type*} [Fintype k] [DecidableEq k]
+  (g : QuantumGate k) :
+  (controllize g : Matrix (QubitBasis × k) (QubitBasis × k) ℂ) =
+    Matrix.of (fun (q₁, t₁) (q₂, t₂) =>
+      if (q₁, q₂) = (0, 0) then
+        (if t₁ = t₂ then (1 : ℂ) else 0)
+      else if (q₁, q₂) = (1, 1) then
+        (g : Matrix k k ℂ) t₁ t₂
+      else
+        0) :=
+rfl
+
 /-- CNOT gate on two qubits: control = first, target = second. -/
 noncomputable def CNOT : TwoQubitGate :=
   C[X]
@@ -290,16 +302,18 @@ noncomputable def CNOT : TwoQubitGate :=
 by
   simp [ket00]
 
+
+-- TODO : See if I can do this without including Matrix.mulVec as an argument to vec_expand_simp
 lemma CNOT_on_ket00 : CNOT • ket00 = ket00 := by
-  vec_expand_simp [Matrix.mulVec, CNOT, controllize, ket00]
+  vec_expand_simp [Matrix.mulVec, CNOT, ket00]
 
 lemma CNOT_on_ket01 : CNOT • ket01 = ket01 := by
-  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket01]
+  vec_expand_simp[Matrix.mulVec, CNOT, ket01]
 
 lemma CNOT_on_ket10 : CNOT • ket10 = ket11 := by
-  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket10, ket11, Xmat]
+  vec_expand_simp[Matrix.mulVec, CNOT, ket10, ket11, Xmat]
 
 lemma CNOT_on_ket11 : CNOT • ket11 = ket10 := by
-  vec_expand_simp[Matrix.mulVec, CNOT, controllize, ket10, ket11, Xmat]
+  vec_expand_simp[Matrix.mulVec, CNOT, ket10, ket11, Xmat]
 
 end Quantum
