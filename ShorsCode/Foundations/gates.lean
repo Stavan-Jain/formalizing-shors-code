@@ -8,7 +8,6 @@ import Mathlib.LinearAlgebra.UnitaryGroup
 namespace Quantum
 open Matrix
 
--- basis/index type
 abbrev QuantumGate (α : Type*) [DecidableEq α] [Fintype α] :=
   Matrix.unitaryGroup α ℂ
 
@@ -178,7 +177,6 @@ lemma Ymat_hermitian : Hermitian Ymat := by matrix_expand[Ymat]
 
 lemma Ymat_involutary : Involutary Ymat := by matrix_expand[Ymat]
 
-/-- `Ymat` is unitary in mathlib's sense. -/
 lemma Ymat_mem_unitaryGroup :
   Ymat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
 by
@@ -199,7 +197,6 @@ lemma Zmat_hermitian : Hermitian Zmat := by matrix_expand[Zmat]
 
 lemma Zmat_involutary : Involutary Zmat := by matrix_expand[Zmat]
 
-/-- `Zmat` is unitary in mathlib's sense. -/
 lemma Zmat_mem_unitaryGroup :
   Zmat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
 by

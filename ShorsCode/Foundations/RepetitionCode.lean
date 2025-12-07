@@ -17,7 +17,6 @@ noncomputable def ket000 : ThreeQubitState :=
     simpa using
       (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 0, 0)))⟩
 
-
 noncomputable def ket111 : ThreeQubitState :=
   ⟨basisVec (1, 1, 1), by
     simpa using
@@ -98,7 +97,6 @@ def X_L : LogicalQubit → LogicalQubit
 noncomputable def X_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
   toState (X_L ℓ)
 
-
 @[simp] lemma X_L_on_zeroL_state :
   X_L_state zeroL = Quantum.oneL := by
   simp [X_L_state]
@@ -156,9 +154,6 @@ by
   -- TODO: prove unitarity of X_L_phys_mat
   sorry
 
-
-
-
 -- ## Semantic Encode
 /-
 I want to actually create a quantum circuit that does this
@@ -208,7 +203,7 @@ noncomputable def toQubitState : LogicalQubit → QubitState
   | zeroL => ket0
   | oneL  => ket1
 
--- eg. 0L = encode (0)
+-- eg. |000> = 0L = encode (0)
 @[simp] lemma encode_state_on_logical (ℓ : LogicalQubit) :
   encode_state (toQubitState ℓ) = toState ℓ := by
   cases ℓ <;> simp [toQubitState, toState, encode_state_ket0, encode_state_ket1]

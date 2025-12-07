@@ -59,10 +59,8 @@ open scoped BigOperators
 lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
   norm (basisVec i0 : α → ℂ) = 1 := by
   classical
-  -- First show the sum of squared entries is 1.
   have hsum :
       (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ) = 1 := by
-    -- Replace each summand by a simple real-valued `if`.
     have hstep :
         (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ)
           = ∑ x : α, (if x = i0 then (1 : ℝ) else 0) := by
@@ -70,12 +68,10 @@ lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
       intro x _
       by_cases h : x = i0
       · subst h
-        simp [basisVec]          -- ‖1‖^2 = 1
-      · simp [basisVec, h]       -- ‖0‖^2 = 0
-    -- Now the sum of this indicator is just 1.
+        simp [basisVec]
+      · simp [basisVec, h]
     simp [basisVec] at hstep
     exact hstep
-  -- Now use the definition of `norm`.
   simp only [norm, basisVec_apply, Real.sqrt_eq_one]
   exact hsum
 
