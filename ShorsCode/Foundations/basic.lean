@@ -39,6 +39,10 @@ def ket1 : Qubit := ⟨![0, 1], by simp⟩
 abbrev TwoQubitBasis : Type := QubitBasis × QubitBasis
 abbrev TwoQubitState : Type := QuantumState TwoQubitBasis
 
+abbrev ThreeQubitBasis := QubitBasis × QubitBasis × QubitBasis
+abbrev ThreeQubitVec := ThreeQubitBasis → ℂ
+abbrev ThreeQubitState := QuantumState ThreeQubitBasis
+
 -- The "constructor" for basis vectors
 noncomputable def basisVec (i0 : α) : Vector α :=
   fun i => if i = i0 then (1 : ℂ) else 0
@@ -97,5 +101,54 @@ lemma ketPlusNorm1 : norm (![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]) = 1 := by
   exact h
 
 noncomputable def ketPlus : Qubit := ⟨(![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]), ketPlusNorm1⟩
+
+noncomputable def ket000 : ThreeQubitState :=
+  ⟨basisVec (0, 0, 0), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 0, 0)))⟩
+
+noncomputable def ket001 : ThreeQubitState :=
+  ⟨basisVec (0, 0, 1), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 0, 1)))⟩
+
+noncomputable def ket010 : ThreeQubitState :=
+  ⟨basisVec (0, 1, 0), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 1, 0)))⟩
+
+noncomputable def ket011 : ThreeQubitState :=
+  ⟨basisVec (0, 1, 1), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 1, 1)))⟩
+
+noncomputable def ket100 : ThreeQubitState :=
+  ⟨basisVec (1, 0, 0), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (1, 0, 0)))⟩
+
+noncomputable def ket101 : ThreeQubitState :=
+  ⟨basisVec (1, 0, 1), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (1, 0, 1)))⟩
+
+noncomputable def ket110 : ThreeQubitState :=
+  ⟨basisVec (1, 1, 0), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (1, 1, 0)))⟩
+
+noncomputable def ket111 : ThreeQubitState :=
+  ⟨basisVec (1, 1, 1), by
+    simpa using
+      (norm_basisVec (α := ThreeQubitBasis) (i0 := (1, 1, 1)))⟩
+
+@[simp] lemma ket000_val : (ket000 : ThreeQubitVec) = basisVec (0, 0, 0) := rfl
+@[simp] lemma ket001_val : (ket001 : ThreeQubitVec) = basisVec (0, 0, 1) := rfl
+@[simp] lemma ket010_val : (ket010 : ThreeQubitVec) = basisVec (0, 1, 0) := rfl
+@[simp] lemma ket011_val : (ket011 : ThreeQubitVec) = basisVec (0, 1, 1) := rfl
+@[simp] lemma ket100_val : (ket100 : ThreeQubitVec) = basisVec (1, 0, 0) := rfl
+@[simp] lemma ket101_val : (ket101 : ThreeQubitVec) = basisVec (1, 0, 1) := rfl
+@[simp] lemma ket110_val : (ket110 : ThreeQubitVec) = basisVec (1, 1, 0) := rfl
+@[simp] lemma ket111_val : (ket111 : ThreeQubitVec) = basisVec (1, 1, 1) := rfl
 
 end Quantum

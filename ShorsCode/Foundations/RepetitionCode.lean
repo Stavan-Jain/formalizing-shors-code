@@ -1,34 +1,22 @@
 import Foundations.Basic
 import Foundations.Gates
+import Foundations.Tensor
 
 namespace Quantum
 
--- 3-qubit basis as a product of three 1-qubit bases.
-abbrev ThreeQubitBasis := QubitBasis × QubitBasis × QubitBasis
-
-abbrev ThreeQubitState := QuantumState ThreeQubitBasis
-
-abbrev ThreeQubitVec := ThreeQubitBasis → ℂ
-
-abbrev ThreeQubitGate : Type := QuantumGate ThreeQubitBasis
-
-noncomputable def ket000 : ThreeQubitState :=
-  ⟨basisVec (0, 0, 0), by
-    simpa using
-      (norm_basisVec (α := ThreeQubitBasis) (i0 := (0, 0, 0)))⟩
-
-noncomputable def ket111 : ThreeQubitState :=
-  ⟨basisVec (1, 1, 1), by
-    simpa using
-      (norm_basisVec (α := ThreeQubitBasis) (i0 := (1, 1, 1)))⟩
-
 -- Logical codewords for the 3-bit repetition code (bit-flip code)
-noncomputable def zeroL : ThreeQubitState := ket000
-noncomputable def oneL : ThreeQubitState := ket111
+noncomputable abbrev zeroL : ThreeQubitState := ket000
+noncomputable abbrev oneL : ThreeQubitState := ket111
 
 @[simp] lemma zeroL_val :
   zeroL.val = basisVec (0, 0, 0) :=
   rfl
+
+@[simp] lemma zeroL_coe :
+  (zeroL : ThreeQubitVec) = basisVec (0, 0, 0) := rfl
+
+@[simp] lemma oneL_coe :
+  (oneL : ThreeQubitVec) = basisVec (1, 1, 1) := rfl
 
 @[simp] lemma oneL_val :
   oneL.val = basisVec (1, 1, 1) :=
@@ -118,7 +106,7 @@ noncomputable def X_L_state (ℓ : LogicalQubit) : ThreeQubitState :=
 end LogicalQubit
 
 -- It's better to construct these using tensor products but I will deal with that later
-noncomputable def X_L_phys_mat :
+/- noncomputable def X_L_phys_mat :
   Matrix ThreeQubitBasis ThreeQubitBasis ℂ :=
   fun i j =>
     if j = (0, 0, 0) then
@@ -153,7 +141,7 @@ by
   refine ⟨X_L_phys_mat, ?_⟩
   -- TODO: prove unitarity of X_L_phys_mat
   sorry
-
+-/
 -- ## Semantic Encode
 /-
 I want to actually create a quantum circuit that does this
@@ -209,5 +197,119 @@ noncomputable def toQubitState : LogicalQubit → QubitState
   cases ℓ <;> simp [toQubitState, toState, encode_state_ket0, encode_state_ket1]
 
 end LogicalQubit
+
+noncomputable def decodeVec (v : ThreeQubitVec) : QubitVec :=
+  fun q =>
+    match q with
+    | 0 => v (0, 0, 0)
+    | 1 => v (1, 1, 1)
+
+/-- On the image of `encodeVec`, `decodeVec` is a left inverse. -/
+lemma decodeVec_encodeVec (v : QubitVec) :
+  decodeVec (encodeVec v) = v := by
+  funext q
+  -- `q : Fin 2`, so there are only two cases 0 and 1
+  fin_cases q <;>
+    simp [decodeVec, encodeVec]
+
+/-- Semantic decoder from 3-qubit states back to 1-qubit states.
+
+It simply reads off the amplitudes of |000⟩ and |111⟩ via `decodeVec`.
+We postpone the norm proof for now (only the value field matters for
+semantic correctness lemmas like `decode_state_encode_state`). -/
+noncomputable def decode_state (ψ : ThreeQubitState) : QubitState :=
+by
+  classical
+  refine ⟨decodeVec ψ.val, ?_⟩
+  -- TODO: show `norm (decodeVec ψ.val) = 1` for the states we care about
+  admit
+
+@[simp] lemma decode_state_encode_state (ψ : QubitState) :
+  decode_state (encode_state ψ) = ψ := by
+  ext q
+  simp [decode_state, encode_state, decodeVec_encodeVec]
+
+/-- Aggregate amplitude for majority-0 basis states. -/
+noncomputable def maj0_amp (v : ThreeQubitVec) : ℂ :=
+  v (0, 0, 0) + v (0, 0, 1) + v (0, 1, 0) + v (1, 0, 0)
+
+/-- Aggregate amplitude for majority-1 basis states. -/
+noncomputable def maj1_amp (v : ThreeQubitVec) : ℂ :=
+  v (1, 1, 1) + v (1, 1, 0) + v (1, 0, 1) + v (0, 1, 1)
+
+/-- Semantic recovery on vectors: project onto the codespace by majority vote.
+
+  `recoverVec v` is the vector
+    (maj0_amp v) · |000⟩ + (maj1_amp v) · |111⟩. -/
+noncomputable def recoverVec (v : ThreeQubitVec) : ThreeQubitVec :=
+  fun ijk =>
+    if ijk = (0, 0, 0) then
+      maj0_amp v
+    else if ijk = (1, 1, 1) then
+      maj1_amp v
+    else
+      0
+
+noncomputable def recover_state (ψ : ThreeQubitState) : ThreeQubitState :=
+by
+  classical
+  refine ⟨recoverVec ψ.val, ?_⟩
+  -- TODO: show this recovered state has norm 1 for the inputs
+  -- we care about (encode_state ψ and encode_state ψ with single X errors).
+  admit
+
+@[simp] lemma recover_state_X_q1_3_encode_ket0 :
+  recover_state (X_q1_3 • encode_state ket0) = encode_state ket0 := by
+  classical
+  -- First rewrite in terms of basis states
+  have h1 : encode_state ket0 = ket000 := encode_state_ket0
+  have h2 : X_q1_3 • ket000 = ket100 := X_q1_3_on_ket000
+  -- Reduce the goal to a statement about `ket100` and `ket000`
+  -- on the state level:
+  --   recover_state ket100 = ket000
+  suffices recover_state ket100 = ket000 by
+    simpa [h1, h2]  -- applies h1,h2 and turns goal into this suffices
+  -- Now prove `recover_state ket100 = ket000` by comparing underlying vectors.
+  ext ijk
+  -- Unfold `recover_state` and `recoverVec`
+  simp [recover_state, recoverVec, ket100, ket000, basisVec_apply,
+        maj0_amp, maj1_amp]
+
+@[simp] lemma recover_state_X_q1_3_encode_ket1 :
+  recover_state (X_q1_3 • encode_state ket1) = encode_state ket1 := by
+  classical
+  -- First rewrite in terms of basis states
+  have h1 : encode_state ket1 = ket111 := encode_state_ket1
+  have h2 : X_q1_3 • ket111 = ket011 := X_q1_3_on_ket111
+  -- Reduce the goal to a statement about `ket011` and `ket111`
+  -- on the state level:
+  --   recover_state ket011 = ket111
+  suffices recover_state ket011 = ket111 by
+    simpa [h1, h2]
+  -- Now prove `recover_state ket011 = ket111` by comparing underlying vectors.
+  ext ijk
+  simp [recover_state, recoverVec,
+        maj0_amp, maj1_amp]
+  grind
+
+lemma recover_state_X_q1_3_encode_state (ψ : QubitState) :
+  recover_state (X_q1_3 • encode_state ψ) = encode_state ψ := by
+  -- This is the nontrivial part.
+  -- Conceptually:
+  --  - define the linear map F on underlying vectors:
+  --        v ↦ recoverVec ((X_q1_3 : ThreeQubitGate).val.mulVec (encodeVec v))
+  --  - show F(basisVec 0) = basisVec 0 and F(basisVec 1) = basisVec 1
+  --    using `recover_state_X_q1_3_encode_ket0` and `recover_state_X_q1_3_encode_ket1`
+  --  - conclude F = id_V, hence the underlying vectors match for general ψ.
+  --
+  -- For now, we leave this as a proof obligation to fill in later.
+  admit
+
+theorem repetition_corrects_single_X_q1 (ψ : QubitState) :
+  decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ := by
+  -- use the recovery lemma plus `decode_state_encode_state`
+  have h := recover_state_X_q1_3_encode_state ψ
+  -- rewrite with h, then apply decode∘encode = id
+  simp [h]
 
 end Quantum

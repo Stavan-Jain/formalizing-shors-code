@@ -16,6 +16,10 @@ abbrev OneQubitGate : Type :=
 
 abbrev TwoQubitGate : Type := QuantumGate TwoQubitBasis
 
+-- 3-qubit basis as a product of three 1-qubit bases.
+
+abbrev ThreeQubitGate : Type := QuantumGate ThreeQubitBasis
+
 open Lean.Parser.Tactic in
 open Lean in
 /--
