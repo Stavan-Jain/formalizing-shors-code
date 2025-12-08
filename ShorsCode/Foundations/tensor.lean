@@ -39,7 +39,7 @@ noncomputable def tensorGate
 by
   classical
   refine ⟨G₁.val ⊗ₖ G₂.val, ?_⟩
-  simpa using (kron_unitary (a := G₁) (b := G₂))
+  simp [kron_unitary (a := G₁) (b := G₂)]
 
 scoped notation G₁:60 " ⊗ᵍ " G₂:60 => tensorGate G₁ G₂
 
@@ -99,7 +99,7 @@ noncomputable def Z_q2_2 : TwoQubitGate :=
 noncomputable def X_q1Z_q2_2 : TwoQubitGate :=
   tensorGate X Z
 
-@[simp] lemma X₁_on_ket00 : X_q1_2 • ket00 = ket10 := by
+@[simp] lemma X_q1_2_on_ket00 : X_q1_2 • ket00 = ket10 := by
   vec_expand_simp [X_q1_2, Matrix.mulVec, ket00, ket10, Xmat]
 
 @[simp] lemma X_q1_2_on_ket01 : X_q1_2 • ket01 = ket11 := by

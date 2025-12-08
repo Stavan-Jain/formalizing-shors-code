@@ -219,7 +219,6 @@ We postpone the norm proof for now (only the value field matters for
 semantic correctness lemmas like `decode_state_encode_state`). -/
 noncomputable def decode_state (ψ : ThreeQubitState) : QubitState :=
 by
-  classical
   refine ⟨decodeVec ψ.val, ?_⟩
   -- TODO: show `norm (decodeVec ψ.val) = 1` for the states we care about
   admit
@@ -255,55 +254,40 @@ by
   classical
   refine ⟨recoverVec ψ.val, ?_⟩
   -- TODO: show this recovered state has norm 1 for the inputs
-  -- we care about (encode_state ψ and encode_state ψ with single X errors).
   admit
 
+-- These should probably not be marked as simp
 @[simp] lemma recover_state_X_q1_3_encode_ket0 :
   recover_state (X_q1_3 • encode_state ket0) = encode_state ket0 := by
   classical
-  -- First rewrite in terms of basis states
   have h1 : encode_state ket0 = ket000 := encode_state_ket0
   have h2 : X_q1_3 • ket000 = ket100 := X_q1_3_on_ket000
-  -- Reduce the goal to a statement about `ket100` and `ket000`
-  -- on the state level:
-  --   recover_state ket100 = ket000
   suffices recover_state ket100 = ket000 by
-    simpa [h1, h2]  -- applies h1,h2 and turns goal into this suffices
-  -- Now prove `recover_state ket100 = ket000` by comparing underlying vectors.
+    simpa [h1, h2]
   ext ijk
-  -- Unfold `recover_state` and `recoverVec`
-  simp [recover_state, recoverVec, ket100, ket000, basisVec_apply,
-        maj0_amp, maj1_amp]
+  simp [recover_state, recoverVec, maj0_amp, maj1_amp]
 
 @[simp] lemma recover_state_X_q1_3_encode_ket1 :
   recover_state (X_q1_3 • encode_state ket1) = encode_state ket1 := by
   classical
-  -- First rewrite in terms of basis states
   have h1 : encode_state ket1 = ket111 := encode_state_ket1
   have h2 : X_q1_3 • ket111 = ket011 := X_q1_3_on_ket111
-  -- Reduce the goal to a statement about `ket011` and `ket111`
-  -- on the state level:
-  --   recover_state ket011 = ket111
   suffices recover_state ket011 = ket111 by
     simpa [h1, h2]
-  -- Now prove `recover_state ket011 = ket111` by comparing underlying vectors.
   ext ijk
   simp [recover_state, recoverVec,
         maj0_amp, maj1_amp]
-  grind
+  intro x
+  simp [x]
 
 lemma recover_state_X_q1_3_encode_state (ψ : QubitState) :
   recover_state (X_q1_3 • encode_state ψ) = encode_state ψ := by
-  -- This is the nontrivial part.
-  -- Conceptually:
-  --  - define the linear map F on underlying vectors:
-  --        v ↦ recoverVec ((X_q1_3 : ThreeQubitGate).val.mulVec (encodeVec v))
-  --  - show F(basisVec 0) = basisVec 0 and F(basisVec 1) = basisVec 1
-  --    using `recover_state_X_q1_3_encode_ket0` and `recover_state_X_q1_3_encode_ket1`
-  --  - conclude F = id_V, hence the underlying vectors match for general ψ.
-  --
-  -- For now, we leave this as a proof obligation to fill in later.
+  simp[recover_state, encode_state, X_q1_3]
+  unfold encodeVec
+  unfold recoverVec
+  simp [maj0_amp, maj1_amp, Xmat]
   admit
+
 
 theorem repetition_corrects_single_X_q1 (ψ : QubitState) :
   decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ := by
