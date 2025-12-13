@@ -124,6 +124,39 @@ lemma encodeVec_norm (v : QubitVec) :
   norm (encodeVec v) = norm v := by
   admit
 
+lemma encodeVec_add (v w : QubitVec) :
+  encodeVec (v + w) = encodeVec v + encodeVec w := by
+  classical
+  funext ijk
+  by_cases h0 : ijk = (0,0,0)
+  · subst h0
+    -- all the ifs reduce definitionally
+    simp [encodeVec]
+  · by_cases h1 : ijk = (1,1,1)
+    · subst h1
+      simp [encodeVec]
+    · -- “other basis state”: everything is 0 on both sides
+      simp [encodeVec, h0, h1]
+
+lemma encodeVec_smul (a : ℂ) (v : QubitVec) : encodeVec (a • v) = a • encodeVec v := by
+  funext ijk; simp [encodeVec, Pi.smul_apply]
+
+lemma encodeVec_basis0 : encodeVec (basisVec (0 : QubitBasis)) = (ket000 : ThreeQubitVec) := by
+  funext ijk
+  by_cases h0 : ijk = (0,0,0)
+  · subst h0; simp [encodeVec, basisVec, ket000]
+  · by_cases h1 : ijk = (1,1,1)
+    · subst h1; simp [encodeVec, basisVec, ket000]
+    · simp [encodeVec, basisVec, ket000, h0, h1]
+
+lemma encodeVec_basis1 : encodeVec (basisVec (1 : QubitBasis)) = (ket111 : ThreeQubitVec) := by
+  funext ijk
+  by_cases h0 : ijk = (0,0,0)
+  · subst h0; simp [encodeVec, basisVec, ket111]
+  · by_cases h1 : ijk = (1,1,1)
+    · subst h1; simp [encodeVec, basisVec, ket111]
+    · simp [encodeVec, basisVec, ket111, h0, h1]
+
 noncomputable def encode_state (ψ : QubitState) : ThreeQubitState :=
   ⟨encodeVec ψ.val, by
     -- here you'd use `encodeVec_norm` and `ψ.property : norm ψ.val = 1`
@@ -174,6 +207,12 @@ lemma decodeVec_encodeVec (v : QubitVec) :
   -- `q : Fin 2`, so there are only two cases 0 and 1
   fin_cases q <;>
     simp [decodeVec, encodeVec]
+
+lemma decodeVec_add (v w : ThreeQubitVec) : decodeVec (v + w) = decodeVec v + decodeVec w := by
+  funext q; fin_cases q <;> simp [decodeVec, Pi.add_apply]
+
+lemma decodeVec_smul (a : ℂ) (v : ThreeQubitVec) : decodeVec (a • v) = a • decodeVec v := by
+  funext q; fin_cases q <;> simp [decodeVec, Pi.smul_apply]
 
 /-- Semantic decoder from 3-qubit states back to 1-qubit states.
 
@@ -369,7 +408,7 @@ lemma recoverVec_X_q1_3_encodeVec (v : QubitVec) :
     _ = encodeVec v := by
           simp [henc]
 
-lemma recover_state_X_q1_3_encode_state (ψ : QubitState) :
+lemma recover_state_X_q1_3_encode_state (ψ : Qubit) :
   recover_state (X_q1_3 • encode_state ψ) = encode_state ψ := by
   ext ijk
   have hv : recoverVec ((X_q1_3.val).mulVec (encodeVec ψ.val)) = encodeVec ψ.val :=
@@ -405,5 +444,157 @@ theorem logicalX_correct_ket0 : decode_state (LogicalX • encode_state ket0) = 
 
 theorem logicalX_correct_ket1 : decode_state (LogicalX • encode_state ket1) = X • ket1 := by
   rw [decode_LogicalX_encode_ket1, X_on_ket1]
+
+lemma qubitVec_eq_lincomb (v : QubitVec) :
+  v = (v 0) • basisVec (0 : QubitBasis) + (v 1) • basisVec (1 : QubitBasis) := by
+  funext q
+  fin_cases q <;> simp [basisVec]
+
+lemma qubit_val_eq_lincomb_kets (ψ : QubitState) :
+  (ψ.val : QubitVec) = (ψ.val 0) • (ket0.val) + (ψ.val 1) • (ket1.val) := by
+  ext q
+  fin_cases q <;>
+    -- now q is 0 or 1
+    simp [ket0, ket1]
+
+lemma gate_mulVec_of_smul_eq
+  (U : ThreeQubitGate) (ψ φ : ThreeQubitState)
+  (h : U • ψ = φ) :
+  (U.val).mulVec (ψ : ThreeQubitVec) = (φ : ThreeQubitVec) := by
+  ext ijk
+  -- evaluate the state equality pointwise
+  simpa using congrArg (fun s : ThreeQubitState => (s : ThreeQubitVec) ijk) h
+
+lemma LogicalX_smul_ket000 : LogicalX • ket000 = ket111 := by
+  -- your existing proof already gives this, but if it’s stated with encode_state:
+  -- LogicalX_encode_ket0 : LogicalX • encode_state ket0 = ket111
+  -- encode_state_ket0 : encode_state ket0 = ket000
+  simpa [encode_state_ket0] using (LogicalX_encode_ket0 : LogicalX • encode_state ket0 = ket111)
+
+lemma LogicalX_smul_ket111 : LogicalX • ket111 = ket000 := by
+  simpa [encode_state_ket1] using (LogicalX_encode_ket1 : LogicalX • encode_state ket1 = ket000)
+
+@[simp] lemma LogicalX_mulVec_ket000 :
+  (LogicalX.val).mulVec (ket000 : ThreeQubitVec) = (ket111 : ThreeQubitVec) :=
+by
+  simpa using gate_mulVec_of_smul_eq LogicalX ket000 ket111 LogicalX_smul_ket000
+
+@[simp] lemma LogicalX_mulVec_ket111 :
+  (LogicalX.val).mulVec (ket111 : ThreeQubitVec) = (ket000 : ThreeQubitVec) :=
+by
+  simpa using gate_mulVec_of_smul_eq LogicalX ket111 ket000 LogicalX_smul_ket111
+
+-- Same idea as gate_mulVec_of_smul_eq, but for 1-qubit gates/states
+lemma gate_mulVec_of_smul_eq_qubit
+  (U : OneQubitGate) (ψ φ : QubitState)
+  (h : U • ψ = φ) :
+  (U.val).mulVec (ψ : QubitVec) = (φ : QubitVec) := by
+  ext q
+  simpa using congrArg (fun s : QubitState => (s : QubitVec) q) h
+
+@[simp] lemma X_mulVec_ket0 :
+  (X.val).mulVec (ket0 : QubitVec) = (ket1 : QubitVec) := by
+  simpa using gate_mulVec_of_smul_eq_qubit X ket0 ket1 X_on_ket0
+
+@[simp] lemma X_mulVec_ket1 :
+  (X.val).mulVec (ket1 : QubitVec) = (ket0 : QubitVec) := by
+  simpa using gate_mulVec_of_smul_eq_qubit X ket1 ket0 X_on_ket1
+
+lemma qubitVec_eq_lincomb_kets (v : QubitVec) :
+  v = (v 0) • (ket0.val) + (v 1) • (ket1.val) := by
+  ext q
+  fin_cases q <;> simp [ket0, ket1]
+
+/-- Unfolding lemma: value of `encode_state`. -/
+@[simp] lemma encode_state_val (ψ : QubitState) :
+  (encode_state ψ).val = encodeVec ψ.val := rfl
+
+/-- Unfolding lemma: value of `decode_state`. -/
+@[simp] lemma decode_state_val (ψ : ThreeQubitState) :
+  (decode_state ψ).val = decodeVec ψ.val := rfl
+
+/-- The semantic “logical X pipeline” as a function on 1-qubit vectors. -/
+noncomputable def F (v : QubitVec) : QubitVec :=
+  decodeVec (Matrix.mulVec (LogicalX.val) (encodeVec v))
+
+lemma F_add (v w : QubitVec) : F (v + w) = F v + F w := by
+  -- safe: only linearity lemmas
+  simp [F, encodeVec_add, decodeVec_add, Matrix.mulVec_add]
+
+lemma F_smul (a : ℂ) (v : QubitVec) : F (a • v) = a • F v := by
+  simp [F, encodeVec_smul, decodeVec_smul, Matrix.mulVec_smul]
+
+/-- Extract the ket0 basis case from the already-proved state theorem. -/
+lemma F_ket0 :
+  F (ket0.val) = (X • ket0).val := by
+  -- take `.val` of the state-level correctness theorem
+  have hval :
+      (decode_state (LogicalX • encode_state ket0)).val = (X • ket0).val :=
+    congrArg Subtype.val logicalX_correct_ket0
+  -- rewrite the left side into `F ket0.val` using only definitional simp
+  -- (no global simp search)
+  -- LHS:
+  --   decode_state_val -> decodeVec ( (LogicalX • encode_state ket0).val )
+  --   smul_QState_val  -> mulVec LogicalX.val (encode_state ket0).val
+  --   encode_state_val -> encodeVec ket0.val
+  simpa [F] using (by
+    simpa [decode_state_val, smul_QState_val, encode_state_val] using hval)
+
+/-- Extract the ket1 basis case from the already-proved state theorem. -/
+lemma F_ket1 :
+  F (ket1.val) = (X • ket1).val := by
+  have hval :
+      (decode_state (LogicalX • encode_state ket1)).val = (X • ket1).val :=
+    congrArg Subtype.val logicalX_correct_ket1
+  simpa [F] using (by
+    simpa [decode_state_val, smul_QState_val, encode_state_val] using hval)
+
+/-- The vector-level correctness statement, proved by linearity + basis cases
+    *but the basis cases come from state-level theorems*. -/
+lemma F_correct (v : QubitVec) :
+  F v = (X.val).mulVec v := by
+  -- expand `v` in the {ket0, ket1} basis
+  have hv : v = (v 0) • ket0.val + (v 1) • ket1.val := by
+    simpa using qubitVec_eq_lincomb_kets (v := v)
+
+  -- rewrite the RHS also into ket0/ket1 using your existing X_mulVec_ket0/ket1
+  calc
+    F v
+        = F ((v 0) • ket0.val + (v 1) • ket1.val) := by
+            -- hv : v = ...
+            -- rewrite v on the LHS
+            simpa using congrArg F hv
+    _   = (v 0) • F (ket0.val) + (v 1) • F (ket1.val) := by
+          simp [F_add, F_smul]
+    _   = (v 0) • (X • ket0).val + (v 1) • (X • ket1).val := by
+          simp [F_ket0, F_ket1]
+    _   = (X.val).mulVec ((v 0) • ket0.val + (v 1) • ket1.val) := by
+          -- push mulVec through the linear combination and use X action on kets
+          simp [Matrix.mulVec_add, Matrix.mulVec_smul]
+          have hx0 : Xmat.mulVec (↑ket0 : QubitVec) = (↑ket1 : QubitVec) := by
+            vec_expand
+            all_goals
+              -- only unfold what is necessary; avoid global simp loops
+              simp [Matrix.mulVec, Xmat, ket0, ket1]
+          have hx1 : Xmat.mulVec (↑ket1 : QubitVec) = (↑ket0 : QubitVec) := by
+            vec_expand
+            all_goals
+              simp [Matrix.mulVec, Xmat, ket0, ket1]
+          rw [hx0, hx1]
+    _   = (X.val).mulVec v := by exact (congrArg (fun w => (X.val).mulVec w) hv.symm)
+
+/-- Your requested correctness statement (on `.val` fields). -/
+lemma logicalX_correct_val (ψ : QubitState) :
+  (decode_state (LogicalX • encode_state ψ)) = (X • ψ).val := by
+  simpa [F, decode_state_val, smul_QState_val, encode_state_val] using
+    (F_correct (v := ψ.val))
+
+/-- Correctness as an equality of `QubitState`s. -/
+lemma logicalX_correct_state (ψ : QubitState) :
+  decode_state (LogicalX • encode_state ψ) = X • ψ := by
+  ext q
+  -- reduce to the val-level lemma pointwise
+  have h := logicalX_correct_val (ψ := ψ)
+  simpa using congrArg (fun v : QubitVec => v q) h
 
 end Quantum
