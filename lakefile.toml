@@ -20,3 +20,7 @@ name = "ShorsCode"
 [[lean_lib]]
 name = "Foundations"
 srcDir = "ShorsCode"
+
+[[lean_lib]]
+name = "RepetitionCode"
+srcDir = "ShorsCode"
