@@ -163,6 +163,11 @@ noncomputable def X_q1q2q3_3 : ThreeQubitGate :=
 @[simp] lemma X_q1_3_on_ket111 : X_q1_3 • ket111 = ket011 := by
   vec_expand_simp [X_q1_3, Matrix.mulVec, Xmat]
 
+@[simp] lemma X_q1q2q3_on_ket000 : X_q1q2q3_3 • ket000 = ket111 := by
+  vec_expand_simp[X_q1q2q3_3, Matrix.mulVec, Xmat]
+
+@[simp] lemma X_q1q2q3_on_ket111 : X_q1q2q3_3 • ket111 = ket000 := by
+  vec_expand_simp[X_q1q2q3_3, Matrix.mulVec, Xmat]
 
 /-
   X_q2_3 : I ⊗ X ⊗ I
@@ -222,9 +227,6 @@ noncomputable def X_q1q2q3_3 : ThreeQubitGate :=
 
 @[simp] lemma X_q3_3_on_ket111 : X_q3_3 • ket111 = ket110 := by
   vec_expand_simp [X_q3_3, Matrix.mulVec, Xmat]
-
-@[simp] lemma X_q1q2q3_on_ket000 : X_q1q2q3_3 • ket000 = ket111 := by
-  vec_expand_simp [X_q1q2q3_3, Matrix.mulVec, Xmat]
 
 /-- CNOT on qubits 1 (control) and 2 (target) of a 3-qubit register. -/
 noncomputable def CNOT_q1_q2_3 : ThreeQubitGate :=

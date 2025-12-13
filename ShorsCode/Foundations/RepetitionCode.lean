@@ -228,6 +228,12 @@ by
   ext q
   simp [decode_state, encode_state, decodeVec_encodeVec]
 
+@[simp] lemma decode_ket000 : decode_state ket000 = ket0 := by
+  vec_expand_simp[decode_state, decodeVec, ket0]
+
+@[simp] lemma decode_ket111 : decode_state ket111 = ket1 := by
+  vec_expand_simp[decode_state, decodeVec, ket1]
+
 /-- Aggregate amplitude for majority-0 basis states. -/
 noncomputable def maj0_amp (v : ThreeQubitVec) : ℂ :=
   v (0, 0, 0) + v (0, 0, 1) + v (0, 1, 0) + v (1, 0, 0)
@@ -285,7 +291,7 @@ lemma recover_state_X_q1_3_encode_state (ψ : QubitState) :
   simp[recover_state, encode_state, X_q1_3]
   unfold encodeVec
   unfold recoverVec
-  simp [maj0_amp, maj1_amp, Xmat]
+  simp [maj0_amp, maj1_amp, Xmat, Matrix.kroneckerMap]
   admit
 
 
@@ -295,5 +301,25 @@ theorem repetition_corrects_single_X_q1 (ψ : QubitState) :
   have h := recover_state_X_q1_3_encode_state ψ
   -- rewrite with h, then apply decode∘encode = id
   simp [h]
+
+noncomputable def LogicalX : ThreeQubitGate := X_q1q2q3_3
+
+lemma LogicalX_encode_ket0 : LogicalX • encode_state ket0 = ket111 := by simp[LogicalX]
+
+lemma LogicalX_encode_ket1 : LogicalX • encode_state ket1 = ket000 := by simp[LogicalX]
+
+lemma decode_LogicalX_encode_ket0 : decode_state (LogicalX • encode_state ket0) = ket1 := by
+  rw[LogicalX_encode_ket0]
+  exact decode_ket111
+
+lemma decode_LogicalX_encode_ket1 : decode_state (LogicalX • encode_state ket1) = ket0 := by
+  rw[LogicalX_encode_ket1]
+  exact decode_ket000
+
+theorem logicalX_correct_ket0 : decode_state (LogicalX • encode_state ket0) = X • ket0 := by
+  rw [decode_LogicalX_encode_ket0, X_on_ket0]
+
+theorem logicalX_correct_ket1 : decode_state (LogicalX • encode_state ket1) = X • ket1 := by
+  rw [decode_LogicalX_encode_ket1, X_on_ket1]
 
 end Quantum

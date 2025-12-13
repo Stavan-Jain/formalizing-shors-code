@@ -245,10 +245,10 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_Y : (Y : Matrix QubitBasis QubitBasis ℂ) = Ymat := rfl
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
 
-lemma X_on_ket0 : X • ket0 = ket1 := by
+@[simp] lemma X_on_ket0 : X • ket0 = ket1 := by
   vec_expand_simp [Xmat, ket0, ket1]
 
-lemma X_on_ket1 : X • ket1 = ket0 := by
+@[simp] lemma X_on_ket1 : X • ket1 = ket0 := by
   vec_expand_simp [Xmat, ket0, ket1]
 
 -- TODO: make controllize more general
