@@ -111,7 +111,6 @@ lemma F_correct (v : QubitVec) :
           rw [hx0, hx1]
     _   = (X.val).mulVec v := by exact (congrArg (fun w => (X.val).mulVec w) hv.symm)
 
-/-- Your requested correctness statement (on `.val` fields). -/
 lemma logicalX_correct_val (ψ : QubitState) :
   (decode_state (LogicalX • encode_state ψ)) = (X • ψ).val := by
   simpa [F, decode_state_val, smul_QState_val, encode_state_val] using
