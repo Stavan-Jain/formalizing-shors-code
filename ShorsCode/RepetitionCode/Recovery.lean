@@ -188,10 +188,12 @@ lemma recover_state_X_q1_3_encode_state (ψ : Qubit) :
 
 
 theorem repetition_corrects_single_X_q1 (ψ : QubitState) :
-  decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ := by
+  decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ.val := by
   -- use the recovery lemma plus `decode_state_encode_state`
   have h := recover_state_X_q1_3_encode_state ψ
   -- rewrite with h, then apply decode∘encode = id
-  simp [h]
+  -- reduce to the vector-level left inverse lemma
+  rw [h]
+  simpa [decode_state, encode_state] using (decodeVec_encodeVec (v := ψ.val))
 
 end Quantum

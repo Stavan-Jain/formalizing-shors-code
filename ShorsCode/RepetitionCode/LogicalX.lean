@@ -11,18 +11,18 @@ lemma LogicalX_encode_ket0 : LogicalX • encode_state ket0 = ket111 := by simp[
 
 lemma LogicalX_encode_ket1 : LogicalX • encode_state ket1 = ket000 := by simp[LogicalX]
 
-lemma decode_LogicalX_encode_ket0 : decode_state (LogicalX • encode_state ket0) = ket1 := by
+lemma decode_LogicalX_encode_ket0 : decode_state (LogicalX • encode_state ket0) = ket1.val := by
   rw[LogicalX_encode_ket0]
   exact decode_ket111
 
-lemma decode_LogicalX_encode_ket1 : decode_state (LogicalX • encode_state ket1) = ket0 := by
+lemma decode_LogicalX_encode_ket1 : decode_state (LogicalX • encode_state ket1) = ket0.val := by
   rw[LogicalX_encode_ket1]
   exact decode_ket000
 
-theorem logicalX_correct_ket0 : decode_state (LogicalX • encode_state ket0) = X • ket0 := by
+theorem logicalX_correct_ket0 : decode_state (LogicalX • encode_state ket0) = (X • ket0).val := by
   rw [decode_LogicalX_encode_ket0, X_on_ket0]
 
-theorem logicalX_correct_ket1 : decode_state (LogicalX • encode_state ket1) = X • ket1 := by
+theorem logicalX_correct_ket1 : decode_state (LogicalX • encode_state ket1) = (X • ket1).val := by
   rw [decode_LogicalX_encode_ket1, X_on_ket1]
 
 lemma qubitVec_eq_lincomb (v : QubitVec) :
@@ -56,27 +56,27 @@ lemma F_smul (a : ℂ) (v : QubitVec) : F (a • v) = a • F v := by
 /-- Extract the ket0 basis case from the already-proved state theorem. -/
 lemma F_ket0 :
   F (ket0.val) = (X • ket0).val := by
-  -- take `.val` of the state-level correctness theorem
+  -- use the vector-level correctness theorem (decode_state now returns QubitVec)
   have hval :
-      (decode_state (LogicalX • encode_state ket0)).val = (X • ket0).val :=
-    congrArg Subtype.val logicalX_correct_ket0
+      decode_state (LogicalX • encode_state ket0) = (X • ket0).val :=
+    logicalX_correct_ket0
   -- rewrite the left side into `F ket0.val` using only definitional simp
   -- (no global simp search)
   -- LHS:
-  --   decode_state_val -> decodeVec ( (LogicalX • encode_state ket0).val )
+  --   decode_state_def -> decodeVec ( (LogicalX • encode_state ket0).val )
   --   smul_QState_val  -> mulVec LogicalX.val (encode_state ket0).val
   --   encode_state_val -> encodeVec ket0.val
   simpa [F] using (by
-    simpa [decode_state_val, smul_QState_val, encode_state_val] using hval)
+    simpa [decode_state_def, smul_QState_val, encode_state_val] using hval)
 
 /-- Extract the ket1 basis case from the already-proved state theorem. -/
 lemma F_ket1 :
   F (ket1.val) = (X • ket1).val := by
   have hval :
-      (decode_state (LogicalX • encode_state ket1)).val = (X • ket1).val :=
-    congrArg Subtype.val logicalX_correct_ket1
+      decode_state (LogicalX • encode_state ket1) = (X • ket1).val :=
+    logicalX_correct_ket1
   simpa [F] using (by
-    simpa [decode_state_val, smul_QState_val, encode_state_val] using hval)
+    simpa [decode_state_def, smul_QState_val, encode_state_val] using hval)
 
 /-- The vector-level correctness statement, proved by linearity + basis cases
     *but the basis cases come from state-level theorems*. -/
@@ -113,16 +113,13 @@ lemma F_correct (v : QubitVec) :
 
 /-- Your requested correctness statement (on `.val` fields). -/
 lemma logicalX_correct_val (ψ : QubitState) :
-  (decode_state (LogicalX • encode_state ψ)) = (X • ψ).val := by
-  simpa [F, decode_state_val, smul_QState_val, encode_state_val] using
+  decode_state (LogicalX • encode_state ψ) = (X • ψ).val := by
+  simpa [F, decode_state_def, smul_QState_val, encode_state_val] using
     (F_correct (v := ψ.val))
 
-/-- Correctness as an equality of `QubitState`s. -/
+/-- Correctness as an equality of vectors (decode_state now returns QubitVec). -/
 lemma logicalX_correct_state (ψ : QubitState) :
-  decode_state (LogicalX • encode_state ψ) = X • ψ := by
-  ext q
-  -- reduce to the val-level lemma pointwise
-  have h := logicalX_correct_val (ψ := ψ)
-  simpa using congrArg (fun v : QubitVec => v q) h
+  decode_state (LogicalX • encode_state ψ) = (X • ψ).val := by
+  exact logicalX_correct_val ψ
 
 end Quantum
