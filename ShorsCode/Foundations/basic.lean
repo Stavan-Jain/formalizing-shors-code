@@ -6,13 +6,12 @@ namespace Quantum
 open Matrix
 
 variable {α : Type*} [Fintype α] [DecidableEq α]
-abbrev Vector (α : Type*) [Fintype α] [DecidableEq α]:= α → ℂ
+abbrev Vector (α : Type*) [Fintype α] [DecidableEq α] := α → ℂ
 
 noncomputable def norm (v : Vector α) :=
   Real.sqrt (∑ i, ‖v i‖^2)
 
-@[simp] lemma norm_def {v : Vector α} : norm v =
-Real.sqrt (∑ i, ‖v i‖^2) := rfl
+@[simp] lemma norm_def {v : Vector α} : norm v = Real.sqrt (∑ i, ‖v i‖^2) := rfl
 
 /-- The norm is always non-negative. -/
 lemma norm_nonneg {v : Vector α} : 0 ≤ norm v := by
@@ -31,32 +30,25 @@ lemma norm_sq_def {v : Vector α} : (norm v)^2 = ∑ i, ‖v i‖^2 := by
 lemma norm_eq_iff_norm_sq_eq {v w : Vector α} :
   norm v = norm w ↔ (norm v)^2 = (norm w)^2 := by
   constructor
-  · intro h
-    rw [h]
+  · intro h; rw [h]
   · intro h
     have hvn : 0 ≤ norm v := norm_nonneg
     have hwn : 0 ≤ norm w := norm_nonneg
     rw [norm_sq_def, norm_sq_def] at h
     have hsqrt_eq : Real.sqrt (∑ i, ‖v i‖^2) = Real.sqrt (∑ i, ‖w i‖^2) := by
       rw [h]
-    rw [← norm, ← norm] at hsqrt_eq
+    rw [← norm_def, ← norm_def] at hsqrt_eq
     exact hsqrt_eq
 
-abbrev QuantumState (α : Type*) [Fintype α] [DecidableEq α]:=
+abbrev QuantumState (α : Type*) [Fintype α] [DecidableEq α] :=
   { v : Vector α // norm v = 1 }
 
 -- Coerce a quantum state to its underlying vector
-instance :
-  CoeTC (QuantumState α) (Vector α) := ⟨Subtype.val⟩
-
-@[simp] lemma coe_val_QState
-  (ψ : QuantumState α) :
-  ((ψ : Vector α) = ψ.val) := rfl
+instance : CoeTC (QuantumState α) (Vector α) := ⟨Subtype.val⟩
 
 abbrev QubitBasis : Type := Fin 2
 
 abbrev Qubit := QuantumState QubitBasis
-abbrev QubitState : Type := QuantumState QubitBasis
 abbrev QubitVec := QubitBasis → ℂ
 
 def ket0 : Qubit := ⟨![1, 0], by simp⟩
@@ -118,12 +110,12 @@ noncomputable def ket11 : TwoQubitState :=
   ⟨ basisVec ((1, 1) : TwoQubitBasis),
     by simpa using norm_basisVec ((1, 1) : TwoQubitBasis) ⟩
 
-lemma ketPlusNorm1 : norm (![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]) = 1 := by
-  have h : (2⁻¹ : ℝ) + 2⁻¹ = 1 := by grind
+lemma ketPlusNorm1 : norm (![1 / (Real.sqrt 2), 1 / (Real.sqrt 2)]) = 1 := by
+  have h : (2⁻¹ : ℝ) + 2⁻¹ = 1 := by norm_num
   simp
   exact h
 
-noncomputable def ketPlus : Qubit := ⟨(![1 / (Real.sqrt 2) , 1 / (Real.sqrt 2)]), ketPlusNorm1⟩
+noncomputable def ketPlus : Qubit := ⟨(![1 / (Real.sqrt 2), 1 / (Real.sqrt 2)]), ketPlusNorm1⟩
 
 noncomputable def ket000 : ThreeQubitState :=
   ⟨basisVec (0, 0, 0), by

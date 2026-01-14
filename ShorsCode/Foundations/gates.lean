@@ -160,8 +160,7 @@ def Hermitian {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) 
 @[simp] lemma Hermitian_def {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) :
   Hermitian M ↔ Mᴴ = M := Iff.rfl
 
-def Involutary {α : Type*} [Fintype α] [DecidableEq α]
-  (M : Matrix α α ℂ) : Prop :=
+def Involutary {α : Type*} [Fintype α] [DecidableEq α] (M : Matrix α α ℂ) : Prop :=
   M * M = 1
 
 @[simp] lemma Involutary_def {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) :
@@ -251,8 +250,6 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma X_on_ket1 : X • ket1 = ket0 := by
   vec_expand_simp [Xmat, ket0, ket1]
 
--- TODO: make controllize more general
-
 -- Controlled version of a gate `g` on `k`, acting on `QubitBasis × k`.
 noncomputable def controllize
   {k : Type*} [Fintype k] [DecidableEq k]
@@ -306,8 +303,6 @@ noncomputable def CNOT : TwoQubitGate :=
 by
   simp [ket00]
 
-
--- TODO : See if I can do this without including Matrix.mulVec as an argument to vec_expand_simp
 lemma CNOT_on_ket00 : CNOT • ket00 = ket00 := by
   vec_expand_simp [Matrix.mulVec, CNOT, ket00]
 
