@@ -14,6 +14,34 @@ noncomputable def norm (v : Vector α) :=
 @[simp] lemma norm_def {v : Vector α} : norm v =
 Real.sqrt (∑ i, ‖v i‖^2) := rfl
 
+/-- The norm is always non-negative. -/
+lemma norm_nonneg {v : Vector α} : 0 ≤ norm v := by
+  simp only [norm]
+  exact Real.sqrt_nonneg _
+
+/-- The square of the norm equals the sum of squared magnitudes. -/
+lemma norm_sq_def {v : Vector α} : (norm v)^2 = ∑ i, ‖v i‖^2 := by
+  simp [norm]
+  rw [Real.sq_sqrt]
+  apply Finset.sum_nonneg
+  intro i _
+  apply sq_nonneg
+
+/-- Two vectors have equal norms if and only if their norm squares are equal. -/
+lemma norm_eq_iff_norm_sq_eq {v w : Vector α} :
+  norm v = norm w ↔ (norm v)^2 = (norm w)^2 := by
+  constructor
+  · intro h
+    rw [h]
+  · intro h
+    have hvn : 0 ≤ norm v := norm_nonneg
+    have hwn : 0 ≤ norm w := norm_nonneg
+    rw [norm_sq_def, norm_sq_def] at h
+    have hsqrt_eq : Real.sqrt (∑ i, ‖v i‖^2) = Real.sqrt (∑ i, ‖w i‖^2) := by
+      rw [h]
+    rw [← norm, ← norm] at hsqrt_eq
+    exact hsqrt_eq
+
 abbrev QuantumState (α : Type*) [Fintype α] [DecidableEq α]:=
   { v : Vector α // norm v = 1 }
 
@@ -62,21 +90,17 @@ open scoped BigOperators
 lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
   norm (basisVec i0 : α → ℂ) = 1 := by
   classical
-  have hsum :
-      (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ) = 1 := by
-    have hstep :
-        (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ)
-          = ∑ x : α, (if x = i0 then (1 : ℝ) else 0) := by
+  have hsum : (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ) = 1 := by
+    have hstep : (∑ x : α, ‖(basisVec i0 : α → ℂ) x‖ ^ 2 : ℝ) =
+                 ∑ x : α, (if x = i0 then (1 : ℝ) else 0) := by
       refine Finset.sum_congr rfl ?_
       intro x _
       by_cases h : x = i0
-      · subst h
-        simp [basisVec]
+      · subst h; simp [basisVec]
       · simp [basisVec, h]
-    simp [basisVec] at hstep
-    exact hstep
-  simp only [norm, basisVec_apply, Real.sqrt_eq_one]
-  exact hsum
+    rw [hstep]
+    simp [Finset.mem_univ]
+  rw [norm, hsum, Real.sqrt_one]
 
 noncomputable def ket00 : TwoQubitState :=
   ⟨ basisVec ((0, 0) : TwoQubitBasis),
