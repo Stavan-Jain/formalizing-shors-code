@@ -217,9 +217,15 @@ Both sides equal `(a + b + c) % 4` by properties of modular arithmetic.
 private lemma mod4_add_assoc (a b c : ℕ) :
   ((a + b) % 4 + c) % 4 = (a + (b + c) % 4) % 4 := by
   -- Both sides equal (a + b + c) % 4 by properties of modular arithmetic
-  -- This can be proven using: (x % n + y) % n = (x + y) % n
-  -- For now we use sorry - this is a standard modular arithmetic property
-  sorry
+  -- Left: ((a + b) % 4 + c) % 4 = (a + b + c) % 4 by Nat.mod_add_mod
+  -- Right: (a + (b + c) % 4) % 4 = (a + b + c) % 4 by Nat.add_mod and associativity
+  calc
+    ((a + b) % 4 + c) % 4
+      = ((a + b) + c) % 4 := by rw [Nat.mod_add_mod]
+    _ = (a + b + c) % 4 := by rw [Nat.add_assoc]
+    _ = (a + (b + c)) % 4 := by rw [← Nat.add_assoc]
+    _ = ((a % 4) + ((b + c) % 4)) % 4 := by rw [Nat.add_mod]
+    _ = (a + (b + c) % 4) % 4 := by rw [Nat.mod_add_mod]
 
 /-- Helper: connecting let-bound operator results to direct expressions.
 
@@ -393,6 +399,7 @@ private lemma PauliOperator.mul_assoc_op (P Q R : PauliOperator) :
   -- Exhaustive case analysis - we verify each case manually
   cases P <;> cases Q <;> cases R <;> simp only [PauliOperator.mulOp]
 
+
 /-- Associativity of multiplication in the Pauli group.
 
 This is the most complex property to prove. We need to show that for any three
@@ -402,77 +409,59 @@ The proof uses:
 1. Associativity of Pauli operator multiplication (verified by case analysis)
 2. Associativity of phase addition modulo 4
 
-Note: The phase associativity proof currently uses `sorry` because it requires
-checking all 16^3 = 4096 combinations or a more sophisticated proof using
-properties of modular arithmetic. This is verifiable but tedious to prove
-exhaustively.
+Note: The phase associativity proof uses exhaustive case analysis on all
+combinations of phase powers and operators (4^6 = 4096 cases), which is
+automated using `rcases`, `cases`, `simp`, and `omega`.
 -/
 theorem mul_assoc (p q r : PauliGroupElement) : (p * q) * r = p * (q * r) := by
   -- Expand definitions
   change mul (mul p q) r = mul p (mul q r)
   unfold mul
 
-  -- Get intermediate operator results
-  let (pq_opPhase, pq_op) := p.operator.mulOp q.operator
-  let (qr_opPhase, qr_op) := q.operator.mulOp r.operator
-  let (pqr_opPhase_l, pqr_op_l) := pq_op.mulOp r.operator
-  let (pqr_opPhase_r, pqr_op_r) := p.operator.mulOp qr_op
+  -- Work directly with expressions to avoid let-binding issues
+  -- Left side: (p * q) * r
+  -- Right side: p * (q * r)
+  -- We need to show they're equal by showing operator and phase parts match
 
-  -- Operator associativity: show pqr_op_l = pqr_op_r
-  have h_op : pqr_op_l = pqr_op_r := by
-    -- Use the associativity lemma: ((P.mulOp Q).2.mulOp R).2 = (P.mulOp (Q.mulOp R).2).2
-    have h_assoc : ((p.operator.mulOp q.operator).2.mulOp r.operator).2 =
-                   (p.operator.mulOp (q.operator.mulOp r.operator).2).2 :=
-      PauliOperator.mul_assoc_op p.operator q.operator r.operator
-    -- The let-bindings compute to these expressions:
-    -- pqr_op_l = (pq_op.mulOp r.operator).2 where pq_op = (p.operator.mulOp q.operator).2
-    -- So: pqr_op_l = ((p.operator.mulOp q.operator).2.mulOp r.operator).2
-    -- Similarly: pqr_op_r = (p.operator.mulOp qr_op).2
-    -- where qr_op = (q.operator.mulOp r.operator).2
-    -- So: pqr_op_r = (p.operator.mulOp (q.operator.mulOp r.operator).2).2
-    -- We connect these using the associativity lemma
-    -- Since let-bindings aren't definitionally equal, we show they compute to the same value
-    -- The let-bindings compute to the same values as the direct expressions
-    -- We show this by using the associativity lemma
-    -- Note: pqr_op_l = (pq_op.mulOp r.operator).2 where pq_op = (p.operator.mulOp q.operator).2
-    -- and pqr_op_r = (p.operator.mulOp qr_op).2 where qr_op = (q.operator.mulOp r.operator).2
-    -- The associativity lemma tells us these are equal
-    -- For now we use sorry - showing let-bindings equal their definitions requires
-    -- careful handling that we'll complete later
-    sorry  -- TODO: Show let-bindings compute to same values as direct expressions
-
-  -- Operator phase associativity: show pqr_opPhase_l = pqr_opPhase_r
-  -- This follows from operator associativity - when operators are equal, their phases match
-  have h_opPhase : pqr_opPhase_l = pqr_opPhase_r := by
-    -- This requires showing that the phase from operator multiplication is associative
-    -- For now we use sorry - this can be proven by case analysis similar to operator associativity
-    sorry
+  -- Operator associativity: show the operator parts are equal
+  have h_op : ((p.operator.mulOp q.operator).2.mulOp r.operator).2 =
+              (p.operator.mulOp (q.operator.mulOp r.operator).2).2 :=
+    PauliOperator.mul_assoc_op p.operator q.operator r.operator
 
   -- Phase associativity: show the total phase computation is associative
+  -- Note: Operator phases alone are not associative, but when combined with phase powers,
+  -- the total phase computation is associative. We prove this directly.
+  -- Left: ((p.phasePower.val + q.phasePower.val + (p.operator.mulOp q.operator).1.val) % 4 +
+  --        r.phasePower.val + ((p.operator.mulOp q.operator).2.mulOp r.operator).1.val) % 4
+  -- Right: (p.phasePower.val + ((q.phasePower.val + r.phasePower.val +
+  --        (q.operator.mulOp r.operator).1.val) % 4) +
+  --        (p.operator.mulOp (q.operator.mulOp r.operator).2).1.val) % 4
   have h_phase_val :
-    ((p.phasePower.val + q.phasePower.val + pq_opPhase.val) % 4 +
-     r.phasePower.val + pqr_opPhase_l.val) % 4 =
+    ((p.phasePower.val + q.phasePower.val + (p.operator.mulOp q.operator).1.val) % 4 +
+     r.phasePower.val + ((p.operator.mulOp q.operator).2.mulOp r.operator).1.val) % 4 =
     (p.phasePower.val + ((q.phasePower.val + r.phasePower.val +
-     qr_opPhase.val) % 4) + pqr_opPhase_r.val) % 4 := by
-    -- Use h_opPhase to replace pqr_opPhase_l with pqr_opPhase_r
-    rw [h_opPhase]
-    -- Now we need:
-    -- ((p.phasePower.val + q.phasePower.val + pq_opPhase.val) % 4 +
-    --  r.phasePower.val + pqr_opPhase_r.val) % 4 =
-    -- (p.phasePower.val + ((q.phasePower.val + r.phasePower.val +
-    --  qr_opPhase.val) % 4) + pqr_opPhase_r.val) % 4
-    -- This would follow from mod4_add_assoc, but we also need to show that
-    -- the operator phases (pq_opPhase, qr_opPhase, pqr_opPhase_r) work out correctly
-    -- For now we use sorry - this requires proving operator phase associativity
-    sorry
+     (q.operator.mulOp r.operator).1.val) % 4) +
+     (p.operator.mulOp (q.operator.mulOp r.operator).2).1.val) % 4 := by
+    -- Exhaustive case analysis on all combinations of phase powers and operators
+    -- Extract phase power values
+    rcases p.phasePower with ⟨p_phase_val, p_phase_lt⟩
+    rcases q.phasePower with ⟨q_phase_val, q_phase_lt⟩
+    rcases r.phasePower with ⟨r_phase_val, r_phase_lt⟩
+    -- Case split on all operators
+    cases p.operator <;> cases q.operator <;> cases r.operator <;>
+    -- Simplify using mulOp to compute intermediate phases
+    simp only [PauliOperator.mulOp] <;>
+    -- Use omega for modular arithmetic
+    omega
 
   -- Convert to Fin equality
   have h_phase :
-    (⟨((p.phasePower.val + q.phasePower.val + pq_opPhase.val) % 4 +
-       r.phasePower.val + pqr_opPhase_l.val) % 4,
+    (⟨((p.phasePower.val + q.phasePower.val + (p.operator.mulOp q.operator).1.val) % 4 +
+       r.phasePower.val + ((p.operator.mulOp q.operator).2.mulOp r.operator).1.val) % 4,
       Nat.mod_lt _ (by norm_num)⟩ : Fin 4) =
     (⟨(p.phasePower.val + ((q.phasePower.val + r.phasePower.val +
-       qr_opPhase.val) % 4) + pqr_opPhase_r.val) % 4,
+       (q.operator.mulOp r.operator).1.val) % 4) +
+       (p.operator.mulOp (q.operator.mulOp r.operator).2).1.val) % 4,
       Nat.mod_lt _ (by norm_num)⟩ : Fin 4) := by
     simp [Fin.ext_iff]
     exact h_phase_val
