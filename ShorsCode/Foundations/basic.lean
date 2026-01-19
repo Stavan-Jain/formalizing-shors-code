@@ -55,12 +55,99 @@ def ket0 : Qubit := ⟨![1, 0], by simp⟩
 
 def ket1 : Qubit := ⟨![0, 1], by simp⟩
 
+/-- Basis type for 2-qubit systems using tuple representation.
+
+This is isomorphic to `NQubitBasis 2` but uses tuples for convenience with
+pattern matching and tensor products. Use `TwoQubitBasis.toNQubitBasis` to convert.
+-/
 abbrev TwoQubitBasis : Type := QubitBasis × QubitBasis
 abbrev TwoQubitState : Type := QuantumState TwoQubitBasis
 
+/-- Basis type for 3-qubit systems using tuple representation.
+
+This is isomorphic to `NQubitBasis 3` but uses tuples for convenience with
+pattern matching and tensor products. Use `ThreeQubitBasis.toNQubitBasis` to convert.
+-/
 abbrev ThreeQubitBasis := QubitBasis × QubitBasis × QubitBasis
 abbrev ThreeQubitVec := ThreeQubitBasis → ℂ
 abbrev ThreeQubitState := QuantumState ThreeQubitBasis
+
+/-!
+# N-Qubit Basis Types
+
+Generic basis types for n-qubit systems, extending the pattern of `TwoQubitBasis` and
+`ThreeQubitBasis` to arbitrary n.
+-/
+
+/-- The basis type for an n-qubit system.
+
+This represents the computational basis states as functions from qubit positions
+to individual qubit basis states. For n qubits, there are 2^n basis states.
+
+**When to use:**
+- Use `NQubitBasis n` for generic n-qubit operations (e.g., n-qubit Pauli groups)
+- Use `TwoQubitBasis` / `ThreeQubitBasis` for small fixed n
+  (better pattern matching, works with `tensorGate`)
+
+**Relationship:**
+- `NQubitBasis 2` is isomorphic to `TwoQubitBasis` (use conversion functions)
+- `NQubitBasis 3` is isomorphic to `ThreeQubitBasis` (use conversion functions)
+
+Example: For n=2, this is isomorphic to `TwoQubitBasis`:
+- `fun i => if i = 0 then 0 else 0` represents |00⟩
+- `fun i => if i = 0 then 1 else 0` represents |10⟩
+- etc.
+-/
+abbrev NQubitBasis (n : ℕ) : Type := Fin n → QubitBasis
+
+/-- Vector type for n-qubit systems. -/
+abbrev NQubitVec (n : ℕ) : Type := Vector (NQubitBasis n)
+
+/-- Quantum state type for n-qubit systems. -/
+abbrev NQubitState (n : ℕ) : Type := QuantumState (NQubitBasis n)
+
+/-- Construct an n-qubit basis state from a function specifying each qubit's state.
+
+This is a convenience constructor that makes it easier to work with n-qubit basis states.
+-/
+def nQubitBasisOf (n : ℕ) (f : Fin n → QubitBasis) : NQubitBasis n := f
+
+/-- Convert a tuple representation to function representation for small n.
+
+For n=2, converts `(a, b) : QubitBasis × QubitBasis` to `NQubitBasis 2`.
+For n=3, converts `(a, b, c) : QubitBasis × QubitBasis × QubitBasis` to `NQubitBasis 3`.
+
+These are useful for connecting the existing tuple-based basis types with
+the new function-based n-qubit basis type.
+-/
+def TwoQubitBasis.toNQubitBasis (b : TwoQubitBasis) : NQubitBasis 2 :=
+  fun i => if i = 0 then b.1 else b.2
+
+def ThreeQubitBasis.toNQubitBasis (b : ThreeQubitBasis) : NQubitBasis 3 :=
+  fun i => if i = 0 then b.1 else if i = 1 then b.2.1 else b.2.2
+
+/-- Convert from function representation back to tuple for n=2. -/
+def NQubitBasis.toTwoQubitBasis (b : NQubitBasis 2) : TwoQubitBasis :=
+  (b 0, b 1)
+
+/-- Convert from function representation back to tuple for n=3. -/
+def NQubitBasis.toThreeQubitBasis (b : NQubitBasis 3) : ThreeQubitBasis :=
+  (b 0, b 1, b 2)
+
+/-- Helper to construct an n-qubit basis state where all qubits are in the same state.
+
+Useful for creating states like |00...0⟩ or |11...1⟩.
+-/
+def nQubitBasisAll (n : ℕ) (q : QubitBasis) : NQubitBasis n :=
+  fun _ => q
+
+/-- The all-zeros basis state |00...0⟩ for n qubits. -/
+def nQubitBasisZeros (n : ℕ) : NQubitBasis n :=
+  nQubitBasisAll n 0
+
+/-- The all-ones basis state |11...1⟩ for n qubits. -/
+def nQubitBasisOnes (n : ℕ) : NQubitBasis n :=
+  nQubitBasisAll n 1
 
 -- The "constructor" for basis vectors
 noncomputable def basisVec (i0 : α) : Vector α :=
@@ -93,6 +180,20 @@ lemma norm_basisVec {α : Type*} [Fintype α] [DecidableEq α] (i0 : α) :
     rw [hstep]
     simp [Finset.mem_univ]
   rw [norm, hsum, Real.sqrt_one]
+
+/-- Construct a basis vector for an n-qubit system.
+
+This is a specialization of `basisVec` for n-qubit systems, using the n-qubit basis type.
+-/
+noncomputable def nQubitBasisVec (n : ℕ) (b : NQubitBasis n) : NQubitVec n :=
+  basisVec b
+
+/-- Construct a normalized basis state for an n-qubit system.
+
+This creates a quantum state corresponding to a computational basis vector.
+-/
+noncomputable def nQubitKet (n : ℕ) (b : NQubitBasis n) : NQubitState n :=
+  ⟨nQubitBasisVec n b, by simpa using norm_basisVec b⟩
 
 noncomputable def ket00 : TwoQubitState :=
   ⟨ basisVec ((0, 0) : TwoQubitBasis),
