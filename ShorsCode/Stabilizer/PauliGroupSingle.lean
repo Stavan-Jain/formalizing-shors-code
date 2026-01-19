@@ -198,9 +198,6 @@ private lemma PauliOperator.mul_assoc_op (P Q R : PauliOperator) :
 
 /-- Associativity of multiplication in the Pauli group. -/
 theorem mul_assoc (p q r : PauliGroupElement) : (p * q) * r = p * (q * r) := by
-  change mul (mul p q) r = mul p (mul q r)
-  unfold mul
-
   have h_op : ((p.operator.mulOp q.operator).operator.mulOp r.operator).operator =
               (p.operator.mulOp (q.operator.mulOp r.operator).operator).operator :=
     PauliOperator.mul_assoc_op p.operator q.operator r.operator
@@ -212,9 +209,6 @@ theorem mul_assoc (p q r : PauliGroupElement) : (p * q) * r = p * (q * r) := by
                  (p.phasePower +
                  (q.phasePower + r.phasePower + (q.operator.mulOp r.operator).phasePower) +
                   (p.operator.mulOp (q.operator.mulOp r.operator).operator).phasePower) := by
-    -- Use associativity of Fin 4 addition
-    simp only [add_assoc]
-    congr 1
     -- Show phase contributions match by case analysis on operators
     cases p.operator <;> cases q.operator <;> cases r.operator <;>
     simp <;> omega
