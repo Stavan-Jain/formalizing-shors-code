@@ -31,6 +31,10 @@ variable {n : ℕ}
 
 namespace NQubitPauliOperator
 
+/-- Extensionality for NQubitPauliOperator. -/
+@[ext] theorem ext {op₁ op₂ : NQubitPauliOperator n} (h : ∀ i, op₁ i = op₂ i) : op₁ = op₂ :=
+  funext h
+
 /-- The identity n-qubit Pauli operator (I ⊗ I ⊗ ... ⊗ I). -/
 def identity (n : ℕ) : NQubitPauliOperator n :=
   fun _ => PauliOperator.I
@@ -96,16 +100,6 @@ structure NQubitPauliGroupElement (n : ℕ) where
   (h_phase : p.phasePower = q.phasePower)
   (h_ops : p.operators = q.operators) : p = q := by
   cases p; cases q; congr
-
--- TODO: Possibly remove this instance since it's already derived from the extensionality theorem
-noncomputable instance {n : ℕ} : DecidableEq (NQubitPauliGroupElement n) := by
-  classical
-  intro p q
-  by_cases h_phase : p.phasePower = q.phasePower
-  · by_cases h_ops : p.operators = q.operators
-    · exact isTrue (NQubitPauliGroupElement.ext p q h_phase h_ops)
-    · exact isFalse (fun h => h_ops (by cases h; rfl))
-  · exact isFalse (fun h => h_phase (by cases h; rfl))
 
 namespace NQubitPauliGroupElement
 
@@ -213,17 +207,17 @@ private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
 
 
 /-- Helper: multiplication with identity operator gives same operator. -/
-private lemma mulOp_identity_right_phase_op (op : NQubitPauliOperator n) :
-  (mulOp op (NQubitPauliOperator.identity n)).operators = op := by
-  unfold mulOp NQubitPauliOperator.identity
-  funext i
+private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
+  (mulOp op ((one n).operators)).operators = op := by
+  unfold mulOp one NQubitPauliOperator.identity
+  ext i
   simp
   cases op i <;> simp
 
-private lemma mulOp_identity_left_phase_op (op : NQubitPauliOperator n) :
+private lemma mulOp_identity_left_op (op : NQubitPauliOperator n) :
   (mulOp (NQubitPauliOperator.identity n) op).operators = op := by
   unfold mulOp NQubitPauliOperator.identity
-  funext i
+  ext i
   simp
   cases op i <;> simp
 
@@ -233,18 +227,20 @@ private lemma mulOp_identity_left_phase_op (op : NQubitPauliOperator n) :
   have h_phase : (mulOp p.operators (NQubitPauliOperator.identity n)).phasePower = 0 :=
     mulOp_identity_right_phase p.operators
   have h_op : (mulOp p.operators (NQubitPauliOperator.identity n)).operators = p.operators :=
-    mulOp_identity_right_phase_op p.operators
-  simp [h_phase, h_op, mul]
+    mulOp_identity_right_op p.operators
+  ext i
+  · simp[mul, h_phase]
+  · simp[mul, h_op]
 
 /-- The identity element acts as identity on the left. -/
 @[simp] lemma one_mul (p : NQubitPauliGroupElement n) : 1 * p = p := by
-  change mul (one n) p = p
-  unfold mul one
   have h_phase : (mulOp (NQubitPauliOperator.identity n) p.operators).phasePower = 0 :=
     mulOp_identity_left_phase p.operators
   have h_op : (mulOp (NQubitPauliOperator.identity n) p.operators).operators = p.operators :=
-    mulOp_identity_left_phase_op p.operators
-  simp [h_phase, h_op]
+    mulOp_identity_left_op p.operators
+  ext i
+  · simp[mul, h_phase]
+  · simp[mul, h_op]
 
 /-- Helper: self-inverse property for operators. -/
 private lemma mulOp_self_inv (op : NQubitPauliOperator n) :
@@ -261,29 +257,18 @@ private lemma mulOp_self_inv (op : NQubitPauliOperator n) :
       simp
     simp [hsum]
   · unfold mulOp NQubitPauliOperator.identity
-    funext i
+    ext i
     -- For each Pauli operator P, P * P = I with phase 0
     -- So (P * P).operator = I
     cases h : op i <;> simp [h]
 
 /-- Right inverse property: p * p⁻¹ = 1. -/
 @[simp] lemma mul_right_inv (p : NQubitPauliGroupElement n) : p * p⁻¹ = 1 := by
-  change mul p (inv p) = one n
-  unfold mul inv one
-  -- p.operators * p.operators = identity with phase 0
-  have h : (mulOp p.operators p.operators).phasePower = 0 ∧
-           (mulOp p.operators p.operators).operators = NQubitPauliOperator.identity n :=
-    mulOp_self_inv p.operators
-  simp [h.1, h.2]
+  simp [mul, inv,mulOp_self_inv]
 
 /-- Left inverse property: p⁻¹ * p = 1. -/
 @[simp] lemma mul_left_inv (p : NQubitPauliGroupElement n) : p⁻¹ * p = 1 := by
-  change mul (inv p) p = one n
-  unfold mul inv one
-  have h : (mulOp p.operators p.operators).phasePower = 0 ∧
-           (mulOp p.operators p.operators).operators = NQubitPauliOperator.identity n :=
-    mulOp_self_inv p.operators
-  simp [h.1, h.2]
+  simp [mul, inv,mulOp_self_inv]
 
 /-- Helper: associativity of n-qubit operator multiplication (operator part only).
 
@@ -292,17 +277,15 @@ applied qubit-by-qubit.
 -/
 private lemma mulOp_assoc_op (p q r : NQubitPauliOperator n) :
   (mulOp (mulOp p q).operators r).operators = (mulOp p (mulOp q r).operators).operators := by
-  unfold mulOp
-  funext i
+  ext i
   -- Apply single-qubit associativity at each qubit position
   -- We prove this by case analysis on each operator, similar to the single-qubit proof
   -- Use case hypotheses to help simp reduce the nested match expressions
-  cases h1 : (p i) <;> cases h2 : (q i) <;> cases h3 : (r i) <;> simp [h1, h2, h3]
+  cases h1 : (p i) <;> cases h2 : (q i) <;> cases h3 : (r i) <;> simp [mulOp,h1, h2, h3]
 
 /-- Associativity of multiplication in the n-qubit Pauli group. -/
 theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r) := by
-  change mul (mul p q) r = mul p (mul q r)
-  unfold mul
+  simp[mul]
   -- Operator associativity
   have h_op : (mulOp (mulOp p.operators q.operators).operators r.operators).operators =
               (mulOp p.operators (mulOp q.operators r.operators).operators).operators :=
@@ -315,18 +298,18 @@ theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r
                  (q.phasePower + r.phasePower + (mulOp q.operators r.operators).phasePower) +
                   (mulOp p.operators (mulOp q.operators r.operators).operators).phasePower) := by
     -- Unfold mulOp to work with sums
-    unfold mulOp
-    simp
+    simp[mulOp]
     -- Use associativity of Fin 4 addition
     simp only [add_assoc]
-    congr 1
+    congr 2
+    simp [add_left_comm]
     -- Now we need to show: sum1 + (r.phasePower + sum2) = r.phasePower + (sum3 + sum4)
     -- Rearrange: sum1 + r.phasePower + sum2 = r.phasePower + sum3 + sum4
     -- Cancel r.phasePower: sum1 + sum2 = sum3 + sum4
     -- Combine sums: sum(A+B) = sum(C+D)
     -- Then use single-qubit associativity per qubit
     sorry -- TODO: Complete the proof by combining sums and using single-qubit associativity
-  apply NQubitPauliGroupElement.ext
+  constructor
   · exact h_phase
   · exact h_op
 
