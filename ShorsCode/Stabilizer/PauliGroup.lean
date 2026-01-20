@@ -302,17 +302,15 @@ theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r
                  (q.phasePower + r.phasePower + (q.operators *ₚ r.operators).phasePower) +
                   (p.operators *ₚ (q.operators *ₚ r.operators).operators).phasePower) := by
     -- Unfold mulOp to work with sums
-    simp[mulOp]
+    simp[add_assoc, add_comm, add_left_comm]
     -- Use associativity of Fin 4 addition
-    simp only [add_assoc]
-    congr 2
-    simp [add_left_comm]
-    -- Now we need to show: sum1 + (r.phasePower + sum2) = r.phasePower + (sum3 + sum4)
-    -- Rearrange: sum1 + r.phasePower + sum2 = r.phasePower + sum3 + sum4
-    -- Cancel r.phasePower: sum1 + sum2 = sum3 + sum4
-    -- Combine sums: sum(A+B) = sum(C+D)
-    -- Then use single-qubit associativity per qubit
-    sorry -- TODO: Complete the proof by combining sums and using single-qubit associativity
+    simp[mulOp]
+    rw [← Finset.sum_add_distrib]
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro i hi
+    cases h : (p.operators i) <;> cases h' : (q.operators i)
+    <;> cases h'' : (r.operators i) <;> simp
   constructor
   · exact h_phase
   · exact h_op

@@ -210,8 +210,8 @@ theorem mul_assoc (p q r : PauliGroupElement) : (p * q) * r = p * (q * r) := by
                  (q.phasePower + r.phasePower + (q.operator.mulOp r.operator).phasePower) +
                   (p.operator.mulOp (q.operator.mulOp r.operator).operator).phasePower) := by
     -- Show phase contributions match by case analysis on operators
-    cases p.operator <;> cases q.operator <;> cases r.operator <;>
-    simp <;> omega
+    simp[add_assoc, add_comm, add_left_comm]
+    cases p.operator <;> cases q.operator <;> cases r.operator <;> simp
 
   apply PauliGroupElement.ext
   · exact h_phase
