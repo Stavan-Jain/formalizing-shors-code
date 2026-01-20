@@ -141,6 +141,10 @@ private noncomputable def mulOp (p q : NQubitPauliOperator n) : NQubitPauliGroup
   let resultOp : NQubitPauliOperator n := fun i => (results i).operator
   ⟨totalPhase, resultOp⟩
 
+-- Notation and helper functions for more readable proof states
+/-- Notation for operator multiplication: `p *ₚ q` means `mulOp p q`. -/
+infixl:70 " *ₚ " => mulOp
+
 /-- Multiplication in the n-qubit Pauli group.
 
 If we have `i^k * (P₀ ⊗ P₁ ⊗ ... ⊗ P_{n-1})` and `i^m * (Q₀ ⊗ Q₁ ⊗ ... ⊗ Q_{n-1})`,
@@ -285,18 +289,18 @@ private lemma mulOp_assoc_op (p q r : NQubitPauliOperator n) :
 
 /-- Associativity of multiplication in the n-qubit Pauli group. -/
 theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r) := by
-  simp[mul]
+  simp only [mul_eq, mul, mk.injEq]
   -- Operator associativity
-  have h_op : (mulOp (mulOp p.operators q.operators).operators r.operators).operators =
-              (mulOp p.operators (mulOp q.operators r.operators).operators).operators :=
+  have h_op : ((p.operators *ₚ q.operators).operators *ₚ r.operators).operators =
+              (p.operators *ₚ (q.operators *ₚ r.operators).operators).operators :=
     mulOp_assoc_op p.operators q.operators r.operators
   -- Phase associativity: use Fin 4 addition associativity and sum properties
-  have h_phase : ((p.phasePower + q.phasePower + (mulOp p.operators q.operators).phasePower) +
+  have h_phase : ((p.phasePower + q.phasePower + (p.operators *ₚ q.operators).phasePower) +
                   r.phasePower +
-                  (mulOp (mulOp p.operators q.operators).operators r.operators).phasePower) =
+                  ((p.operators *ₚ q.operators).operators *ₚ r.operators).phasePower) =
                  (p.phasePower +
-                 (q.phasePower + r.phasePower + (mulOp q.operators r.operators).phasePower) +
-                  (mulOp p.operators (mulOp q.operators r.operators).operators).phasePower) := by
+                 (q.phasePower + r.phasePower + (q.operators *ₚ r.operators).phasePower) +
+                  (p.operators *ₚ (q.operators *ₚ r.operators).operators).phasePower) := by
     -- Unfold mulOp to work with sums
     simp[mulOp]
     -- Use associativity of Fin 4 addition
