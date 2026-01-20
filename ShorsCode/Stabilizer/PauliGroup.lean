@@ -141,7 +141,7 @@ private noncomputable def mulOp (p q : NQubitPauliOperator n) : NQubitPauliGroup
   let resultOp : NQubitPauliOperator n := fun i => (results i).operator
   ⟨totalPhase, resultOp⟩
 
--- Notation and helper functions for more readable proof states
+-- Notation for more readable proof states
 /-- Notation for operator multiplication: `p *ₚ q` means `mulOp p q`. -/
 infixl:70 " *ₚ " => mulOp
 
@@ -208,7 +208,6 @@ private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
     rw [Finset.sum_congr rfl (fun i _ => h i)]
     simp
   simp [hsum]
-
 
 /-- Helper: multiplication with identity operator gives same operator. -/
 private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
