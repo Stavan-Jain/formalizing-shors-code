@@ -185,6 +185,8 @@ lemma Xmat_hermitian : Hermitian Xmat := by matrix_expand[Xmat]
 
 lemma Xmat_involutary : Involutary Xmat := by matrix_expand[Xmat]
 
+@[simp] lemma Xmat_sq : Xmat * Xmat = 1 := Xmat_involutary
+
 lemma Xmat_mem_unitaryGroup :
   Xmat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
 by
@@ -208,6 +210,8 @@ lemma Ymat_hermitian : Hermitian Ymat := by matrix_expand[Ymat]
 
 lemma Ymat_involutary : Involutary Ymat := by matrix_expand[Ymat]
 
+@[simp] lemma Ymat_sq : Ymat * Ymat = 1 := Ymat_involutary
+
 lemma Ymat_mem_unitaryGroup :
   Ymat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
 by
@@ -227,6 +231,26 @@ def Zmat : Matrix QubitBasis QubitBasis ℂ :=
 lemma Zmat_hermitian : Hermitian Zmat := by matrix_expand[Zmat]
 
 lemma Zmat_involutary : Involutary Zmat := by matrix_expand[Zmat]
+
+@[simp] lemma Zmat_sq : Zmat * Zmat = 1 := Zmat_involutary
+
+/-- Pauli matrix cross products: X * Y = iZ -/
+lemma Xmat_mul_Ymat : Xmat * Ymat = Complex.I • Zmat := by matrix_expand[Xmat, Ymat, Zmat]
+
+/-- Pauli matrix cross products: Y * X = -iZ -/
+lemma Ymat_mul_Xmat : Ymat * Xmat = -Complex.I • Zmat := by matrix_expand[Xmat, Ymat, Zmat]
+
+/-- Pauli matrix cross products: Y * Z = iX -/
+lemma Ymat_mul_Zmat : Ymat * Zmat = Complex.I • Xmat := by matrix_expand[Xmat, Ymat, Zmat]
+
+/-- Pauli matrix cross products: Z * Y = -iX -/
+lemma Zmat_mul_Ymat : Zmat * Ymat = -Complex.I • Xmat := by matrix_expand[Xmat, Ymat, Zmat]
+
+/-- Pauli matrix cross products: Z * X = iY -/
+lemma Zmat_mul_Xmat : Zmat * Xmat = Complex.I • Ymat := by matrix_expand[Xmat, Ymat, Zmat]
+
+/-- Pauli matrix cross products: X * Z = -iY -/
+lemma Xmat_mul_Zmat : Xmat * Zmat = -Complex.I • Ymat := by matrix_expand[Xmat, Ymat, Zmat]
 
 lemma Zmat_mem_unitaryGroup :
   Zmat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
