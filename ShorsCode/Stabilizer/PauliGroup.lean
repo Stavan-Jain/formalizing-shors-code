@@ -17,6 +17,21 @@ open scoped BigOperators
 
 This section extends the single-qubit Pauli group to n-qubit systems.
 An n-qubit Pauli operator is a function from qubit positions to single-qubit Pauli operators.
+
+## Structure
+
+An n-qubit Pauli group element has the form `i^k * (P₀ ⊗ P₁ ⊗ ... ⊗ P_{n-1})` where:
+- `k : Fin 4` represents the global phase: k=0 → 1, k=1 → i, k=2 → -1, k=3 → -i
+- `operators : NQubitPauliOperator n` assigns a single-qubit Pauli operator to each qubit
+
+For n qubits, this gives 4 phases × 4^n operators = 4^(n+1) total elements.
+
+## Key Properties
+
+- The n-qubit Pauli group forms a group under multiplication
+- Multiplication is computed qubit-by-qubit with phase accumulation
+- Matrix representation is the tensor product (Kronecker product) of individual Pauli matrices
+- Two elements commute if and only if they commute qubit-wise (with appropriate phase conditions)
 -/
 
 /-- An n-qubit Pauli operator.
@@ -84,7 +99,24 @@ This follows from:
 lemma identity_toMatrix (n : ℕ) :
   (identity n).toMatrix = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
   ext b₁ b₂
-  sorry
+  simp [toMatrix, identity, Matrix.one_apply]
+  -- The product over all qubits of I.toMatrix entries
+  -- I.toMatrix (b₁ i) (b₂ i) = 1 if b₁ i = b₂ i, else 0
+  -- So the product is 1 if b₁ = b₂ (all qubits match), else 0
+  by_cases h : b₁ = b₂
+  · subst h
+    simp
+  · have h_ne : ∃ i, b₁ i ≠ b₂ i := by
+      contrapose! h
+      ext i
+      simp [h]
+    obtain ⟨i, hi⟩ := h_ne
+    -- At position i, the entry is 0, so the product is 0
+    rw [Finset.prod_eq_zero (Finset.mem_univ i)]
+    · simp
+      exact h
+    · simp [hi]
+
 
 end NQubitPauliOperator
 
@@ -98,7 +130,11 @@ This extends the single-qubit Pauli group to n-qubit systems.
 /-- An element of the n-qubit Pauli group.
 
 The n-qubit Pauli group consists of elements of the form `i^k * (P₀ ⊗ P₁ ⊗ ... ⊗ P_{n-1})` where:
-- `k : Fin 4` represents the global phase: k=0 → 1, k=1 → i, k=2 → -1, k=3 → -i
+- `phasePower : Fin 4` represents the global phase:
+  - k=0 → phase = 1
+  - k=1 → phase = i
+  - k=2 → phase = -1
+  - k=3 → phase = -i
 - `operators : NQubitPauliOperator n` assigns a single-qubit Pauli operator to each qubit
 
 For n qubits, this gives 4 phases × 4^n operators = 4^(n+1) total elements.
@@ -118,6 +154,7 @@ namespace NQubitPauliGroupElement
 /-- Convert an n-qubit Pauli group element to its matrix representation.
 
 This multiplies the global phase by the tensor product of the individual Pauli matrices.
+The matrix representation is a group homomorphism: `(p * q).toMatrix = p.toMatrix * q.toMatrix`.
 -/
 noncomputable def toMatrix (p : NQubitPauliGroupElement n) :
   Matrix (NQubitBasis n) (NQubitBasis n) ℂ :=
@@ -132,6 +169,10 @@ def phase (p : NQubitPauliGroupElement n) : Fin 4 := p.phasePower
 
 /-- Extract the n-qubit Pauli operator. -/
 def ops (p : NQubitPauliGroupElement n) : NQubitPauliOperator n := p.operators
+
+-- Simp lemmas for the identity element
+@[simp] lemma one_phasePower (n : ℕ) : (one n).phasePower = 0 := rfl
+@[simp] lemma one_operators (n : ℕ) : (one n).operators = NQubitPauliOperator.identity n := rfl
 
 /-- Get the Pauli operator at a specific qubit position. -/
 def getOp (p : NQubitPauliGroupElement n) (i : Fin n) : PauliOperator :=
@@ -193,8 +234,15 @@ noncomputable instance : One (NQubitPauliGroupElement n) := ⟨one n⟩
 
 -- Simp lemmas for n-qubit Pauli group element definitions
 @[simp] lemma one_def : (1 : NQubitPauliGroupElement n) = ⟨0, NQubitPauliOperator.identity n⟩ := rfl
+@[simp] lemma one_phasePower_def (n : ℕ) : (1 : NQubitPauliGroupElement n).phasePower = 0 := rfl
+@[simp] lemma one_operators_def (n : ℕ) :
+(1 : NQubitPauliGroupElement n).operators = NQubitPauliOperator.identity n := rfl
 
-/-- Helper: multiplication with identity operator gives no phase contribution. -/
+/-- Helper: multiplication with identity operator gives no phase contribution.
+
+When multiplying an n-qubit Pauli operator with the identity operator, the phase
+contribution is zero because I * P = P for any Pauli operator P.
+-/
 private lemma mulOp_identity_right_phase (op : NQubitPauliOperator n) :
   (mulOp op (NQubitPauliOperator.identity n)).phasePower = 0 := by
   unfold mulOp NQubitPauliOperator.identity
@@ -209,6 +257,11 @@ private lemma mulOp_identity_right_phase (op : NQubitPauliOperator n) :
     simp
   simp [hsum]
 
+/-- Helper: multiplication with identity operator on the left gives no phase contribution.
+
+When multiplying the identity operator with an n-qubit Pauli operator, the phase
+contribution is zero because I * P = P for any Pauli operator P.
+-/
 private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
   (mulOp (NQubitPauliOperator.identity n) op).phasePower = 0 := by
   unfold mulOp NQubitPauliOperator.identity
@@ -221,7 +274,11 @@ private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
     simp
   simp [hsum]
 
-/-- Helper: multiplication with identity operator gives same operator. -/
+/-- Helper: multiplication with identity operator gives same operator.
+
+When multiplying an n-qubit Pauli operator with the identity operator, the result
+operator is unchanged because I * P = P for any Pauli operator P.
+-/
 private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
   (mulOp op ((one n).operators)).operators = op := by
   unfold mulOp one NQubitPauliOperator.identity
@@ -229,6 +286,11 @@ private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
   simp
   cases op i <;> simp
 
+/-- Helper: multiplication with identity operator on the left gives same operator.
+
+When multiplying the identity operator with an n-qubit Pauli operator, the result
+operator is unchanged because I * P = P for any Pauli operator P.
+-/
 private lemma mulOp_identity_left_op (op : NQubitPauliOperator n) :
   (mulOp (NQubitPauliOperator.identity n) op).operators = op := by
   unfold mulOp NQubitPauliOperator.identity
@@ -257,7 +319,11 @@ private lemma mulOp_identity_left_op (op : NQubitPauliOperator n) :
   · simp[mul, h_phase]
   · simp[mul, h_op]
 
-/-- Helper: self-inverse property for operators. -/
+/-- Helper: self-inverse property for operators.
+
+For any Pauli operator P, we have P * P = I with phase 0. This follows from the
+fact that each single-qubit Pauli operator squares to the identity.
+-/
 private lemma mulOp_self_inv (op : NQubitPauliOperator n) :
   (mulOp op op).phasePower = 0 ∧ (mulOp op op).operators = NQubitPauliOperator.identity n := by
   constructor
@@ -279,16 +345,17 @@ private lemma mulOp_self_inv (op : NQubitPauliOperator n) :
 
 /-- Right inverse property: p * p⁻¹ = 1. -/
 @[simp] lemma mul_right_inv (p : NQubitPauliGroupElement n) : p * p⁻¹ = 1 := by
-  simp [mul, inv,mulOp_self_inv]
+  simp [mul, inv, mulOp_self_inv]
 
 /-- Left inverse property: p⁻¹ * p = 1. -/
 @[simp] lemma mul_left_inv (p : NQubitPauliGroupElement n) : p⁻¹ * p = 1 := by
-  simp [mul, inv,mulOp_self_inv]
+  simp [mul, inv, mulOp_self_inv]
 
 /-- Helper: associativity of n-qubit operator multiplication (operator part only).
 
 This follows from associativity of single-qubit Pauli operator multiplication,
-applied qubit-by-qubit.
+applied qubit-by-qubit. The operator part of (p * q) * r equals the operator part
+of p * (q * r).
 -/
 private lemma mulOp_assoc_op (p q r : NQubitPauliOperator n) :
   (mulOp (mulOp p q).operators r).operators = (mulOp p (mulOp q r).operators).operators := by
@@ -298,10 +365,20 @@ private lemma mulOp_assoc_op (p q r : NQubitPauliOperator n) :
   -- Use case hypotheses to help simp reduce the nested match expressions
   cases h1 : (p i) <;> cases h2 : (q i) <;> cases h3 : (r i) <;> simp [mulOp,h1, h2, h3]
 
-/-- Associativity of multiplication in the n-qubit Pauli group. -/
+/-- Associativity of multiplication in the n-qubit Pauli group.
+
+The proof proceeds in two parts:
+1. Operator associativity: the operator part of (p * q) * r equals p * (q * r)
+2. Phase associativity: the phase calculations match due to associativity of Fin 4
+   addition and the qubit-wise phase contributions.
+
+The phase calculation uses the fact that phase contributions from operator multiplication
+are computed qubit-by-qubit and summed, so associativity follows from associativity of
+addition and the qubit-wise associativity of single-qubit Pauli operator multiplication.
+-/
 theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r) := by
   simp only [mul_eq, mul, mk.injEq]
-  -- Operator associativity
+  -- Operator associativity: follows from qubit-by-qubit associativity
   have h_op : ((p.operators *ₚ q.operators).operators *ₚ r.operators).operators =
               (p.operators *ₚ (q.operators *ₚ r.operators).operators).operators :=
     mulOp_assoc_op p.operators q.operators r.operators
@@ -320,6 +397,7 @@ theorem mul_assoc (p q r : NQubitPauliGroupElement n) : (p * q) * r = p * (q * r
     rw [← Finset.sum_add_distrib]
     apply Finset.sum_congr rfl
     intro i hi
+    -- Case analysis on all operator combinations at each qubit
     cases h : (p.operators i) <;> cases h' : (q.operators i)
     <;> cases h'' : (r.operators i) <;> simp
   constructor
@@ -332,6 +410,107 @@ noncomputable instance : Group (NQubitPauliGroupElement n) where
   one_mul := one_mul
   mul_one := mul_one
   inv_mul_cancel := mul_left_inv
+
+/-!
+# Commutation Properties
+
+Two n-qubit Pauli group elements commute if and only if they commute qubit-wise.
+The phase factors don't affect commutation since they're scalars.
+-/
+
+/-- Two n-qubit Pauli group elements commute if and only if they commute at every qubit position.
+
+This follows from the fact that multiplication is computed qubit-by-qubit, so the
+elements commute globally if and only if they commute locally at each qubit.
+-/
+lemma commutes_iff (p q : NQubitPauliGroupElement n) :
+  p * q = q * p ↔ ∀ i : Fin n,
+  (p.operators i).mulOp (q.operators i) = (q.operators i).mulOp (p.operators i) := by
+  constructor
+  · intro h i
+    -- Extract qubit-wise commutation from global commutation
+    simp [mul, mulOp] at h
+    have h_op :
+    (mulOp p.operators q.operators).operators = (mulOp q.operators p.operators).operators := by
+      cases h
+      sorry
+    -- At qubit i, the operators must commute
+    have h_i :
+    (mulOp p.operators q.operators).operators i = (mulOp q.operators p.operators).operators i :=
+      congrFun h_op i
+    simp [mulOp] at h_i
+    -- Extract the phase and operator equality
+    ext
+    · -- Phase parts: they must be equal mod 4
+      have h_phase_eq :
+      (mulOp p.operators q.operators).phasePower = (mulOp q.operators p.operators).phasePower := by
+        cases h
+        sorry
+      -- The phase at qubit i contributes to the total phase
+      -- If all qubits commute, the total phase contributions are equal
+      sorry -- This requires more detailed phase analysis
+    · -- Operator parts: must be equal at each qubit
+      exact h_i
+  · intro h
+    ext
+    · -- Phase parts: if all qubits commute, total phases are equal
+      simp [mul, mulOp]
+      -- Sum of phase contributions from commuting operators
+      sorry -- Requires showing sum of phase contributions is equal when operators commute
+    · -- Operator parts: if all qubits commute, operators are equal
+      simp [mul, mulOp]
+      sorry
+
+/-- Two n-qubit Pauli elements commute if their operators commute qubit-wise (simplified version).
+
+This is a more practical criterion: check if at each qubit, either the operators are equal
+or one is the identity.
+-/
+lemma commutes_iff_simple (p q : NQubitPauliGroupElement n) :
+  p * q = q * p ↔ ∀ i : Fin n,
+    (p.operators i = q.operators i) ∨
+    (p.operators i = PauliOperator.I) ∨
+    (q.operators i = PauliOperator.I) := by
+  rw [commutes_iff]
+  constructor
+  · intro h i
+    -- Use single-qubit commutation criterion
+    have h_i := h i
+    rw [PauliGroupElement.PauliOperator.commutes_iff] at h_i
+    exact h_i
+  · intro h i
+    -- Use single-qubit commutation criterion in reverse
+    have h_i := h i
+    rw [PauliGroupElement.PauliOperator.commutes_iff]
+    exact h_i
+
+@[simp] lemma toMatrix_one (n : ℕ) :
+  ((1 : NQubitPauliGroupElement n).toMatrix) = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
+  simp [toMatrix]
+  sorry
+
+/-- Group multiplication corresponds to matrix multiplication.
+
+The matrix representation is a group homomorphism: the matrix of the product equals
+the product of the matrices. This follows from the single-qubit case applied qubit-by-qubit.
+-/
+lemma toMatrix_mul (p q : NQubitPauliGroupElement n) :
+  (p * q).toMatrix = p.toMatrix * q.toMatrix := by
+  -- This requires showing that the tensor product of matrix products equals
+  -- the product of tensor products, which is a standard property of Kronecker products.
+  -- For now, we mark it as needing more detailed proof
+  sorry -- TODO: Prove using properties of Kronecker products and phase multiplication
+
+/-- Group inverse corresponds to matrix inverse.
+
+Since Pauli matrices are unitary, the matrix inverse equals the group inverse.
+-/
+lemma toMatrix_inv (p : NQubitPauliGroupElement n) :
+  (p⁻¹).toMatrix = (p.toMatrix)⁻¹ := by
+  -- This requires proving that Pauli group elements are unitary
+  -- For now, we can prove it using p * p⁻¹ = 1 and toMatrix_mul
+  sorry -- TODO: Prove using unitarity of Pauli matrices
+
 
 end NQubitPauliGroupElement
 
