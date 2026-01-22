@@ -20,6 +20,40 @@ abbrev TwoQubitGate : Type := QuantumGate TwoQubitBasis
 
 abbrev ThreeQubitGate : Type := QuantumGate ThreeQubitBasis
 
+@[simp] lemma gate_inv_val
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) :
+  (G⁻¹ : QuantumGate α).val = star G.val := by
+  rfl
+
+-- Inverse-related lemmas (API stubs, proofs later)
+@[simp] lemma gate_val_inv
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) :
+  (G.val)⁻¹ = star G.val := by
+  have h_unit := Matrix.UnitaryGroup.det_isUnit G
+  have h_star_mul := Matrix.mem_unitaryGroup_iff.1 G.2
+  calc (G.val)⁻¹
+      = (G.val)⁻¹ * 1 := by rw [mul_one]
+    _ = (G.val)⁻¹ * (G.val * star G.val) := by rw [← h_star_mul]
+    _ = ((G.val)⁻¹ * G.val) * star G.val := by rw [Matrix.mul_assoc]
+    _ = 1 * star G.val := by rw [nonsing_inv_mul _ h_unit]
+    _ = star G.val := by rw [one_mul]
+
+@[simp] lemma gate_val_mul_inv
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) :
+  G.val * (G⁻¹ : QuantumGate α).val = (1 : Matrix α α ℂ) := by
+  rw [gate_inv_val]
+  exact Matrix.mem_unitaryGroup_iff.1 G.2
+
+@[simp] lemma gate_val_inv_mul
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G : QuantumGate α) :
+  (G⁻¹ : QuantumGate α).val * G.val = (1 : Matrix α α ℂ) := by
+  rw [gate_inv_val]
+  exact Matrix.mem_unitaryGroup_iff'.1 G.2
+
 open Lean.Parser.Tactic in
 open Lean in
 /--
@@ -166,6 +200,21 @@ def Involutary {α : Type*} [Fintype α] [DecidableEq α] (M : Matrix α α ℂ)
 @[simp] lemma Involutary_def {α : Type*} [DecidableEq α] [Fintype α] (M : Matrix α α ℂ) :
   Involutary M ↔ M * M = 1 := Iff.rfl
 
+-- Inverse-related lemmas (API stubs, proofs later)
+lemma involutary_inv_eq
+  {α : Type*} [Fintype α] [DecidableEq α]
+  {M : Matrix α α ℂ} (h : Involutary M) :
+  M⁻¹ = M := by
+  have h_mul : M * M = 1 := h
+  have h_unit : IsUnit M.det :=
+    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.isUnit_of_right_inverse h_mul)
+  calc M⁻¹
+      = M⁻¹ * 1 := by rw [mul_one]
+    _ = M⁻¹ * (M * M) := by rw [← h_mul]
+    _ = (M⁻¹ * M) * M := by rw [Matrix.mul_assoc]
+    _ = 1 * M := by rw [nonsing_inv_mul _ h_unit]
+    _ = M := by rw [one_mul]
+
 /-- If a matrix is Hermitian and involutary, then it is unitary (in the sense U
 Uᴴ = 1 and Uᴴ U = 1). -/
 lemma unitary_of_hermitian_involutary
@@ -177,6 +226,26 @@ lemma unitary_of_hermitian_involutary
   refine ⟨?left, ?right⟩
   · simpa [hH'] using hI
   · simpa [hH'] using hI
+
+/-- Identity matrix on the qubit basis. -/
+def Imat : Matrix QubitBasis QubitBasis ℂ := 1
+
+lemma Imat_hermitian : Hermitian Imat := by
+  rw [Hermitian_def, Imat, conjTranspose_one]
+
+lemma Imat_involutary : Involutary Imat := by
+  rw [Involutary_def, Imat, mul_one]
+
+@[simp] lemma Imat_sq : Imat * Imat = 1 := Imat_involutary
+
+lemma Imat_mem_unitaryGroup :
+  Imat ∈ Matrix.unitaryGroup QubitBasis ℂ := by
+  have h := unitary_of_hermitian_involutary Imat_hermitian Imat_involutary
+  exact Matrix.mem_unitaryGroup_iff.mpr h.1
+
+/-- Identity as a one-qubit gate. -/
+noncomputable def I : OneQubitGate :=
+  ⟨Imat, Imat_mem_unitaryGroup⟩
 
 /- Pauli X matrix -/
 def Xmat : Matrix QubitBasis QubitBasis ℂ := !![0, 1; 1, 0]
@@ -264,9 +333,26 @@ noncomputable def Z : OneQubitGate :=
 { val := Zmat
 , property := Zmat_mem_unitaryGroup }
 
+@[simp] lemma coe_I : (I : Matrix QubitBasis QubitBasis ℂ) = Imat := rfl
 @[simp] lemma coe_X : (X : Matrix QubitBasis QubitBasis ℂ) = Xmat := rfl
 @[simp] lemma coe_Y : (Y : Matrix QubitBasis QubitBasis ℂ) = Ymat := rfl
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
+
+@[simp] lemma inv_I : I⁻¹ = I := by
+  ext
+  rw [gate_inv_val, coe_I, star_eq_conjTranspose, (Hermitian_def Imat).1 Imat_hermitian]
+
+@[simp] lemma inv_X : X⁻¹ = X := by
+  ext
+  rw [gate_inv_val, coe_X, star_eq_conjTranspose, (Hermitian_def Xmat).1 Xmat_hermitian]
+
+@[simp] lemma inv_Y : Y⁻¹ = Y := by
+  ext
+  rw [gate_inv_val, coe_Y, star_eq_conjTranspose, (Hermitian_def Ymat).1 Ymat_hermitian]
+
+@[simp] lemma inv_Z : Z⁻¹ = Z := by
+  ext
+  rw [gate_inv_val, coe_Z, star_eq_conjTranspose, (Hermitian_def Zmat).1 Zmat_hermitian]
 
 @[simp] lemma X_on_ket0 : X • ket0 = ket1 := by
   vec_expand_simp [Xmat, ket0, ket1]
