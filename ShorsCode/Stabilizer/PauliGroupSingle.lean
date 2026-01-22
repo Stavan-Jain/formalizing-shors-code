@@ -50,12 +50,19 @@ deriving DecidableEq
 
 namespace PauliOperator
 
-/-- Convert a Pauli operator to its corresponding matrix representation. -/
+/-- Convert a Pauli operator to its corresponding matrix representation.
+TODO: Add a definition that takes PauliOperators to their corresponding QuantumGate -/
 noncomputable def toMatrix : PauliOperator → Matrix QubitBasis QubitBasis ℂ
   | .I => 1
   | .X => Xmat
   | .Y => Ymat
   | .Z => Zmat
+
+/-- The identity operator's matrix is the identity matrix. -/
+@[simp] lemma toMatrix_I : PauliOperator.I.toMatrix = (1 : Matrix QubitBasis QubitBasis ℂ) := rfl
+@[simp] lemma toMatrix_X : PauliOperator.X.toMatrix = Xmat := rfl
+@[simp] lemma toMatrix_Y : PauliOperator.Y.toMatrix = Ymat := rfl
+@[simp] lemma toMatrix_Z : PauliOperator.Z.toMatrix = Zmat := rfl
 
 /-- Multiplication of Pauli operators, returning a Pauli group element.
 
@@ -118,6 +125,35 @@ def phasePowerToComplex (k : Fin 4) : ℂ :=
 @[simp] lemma phasePowerToComplex_3 : phasePowerToComplex 3 = -Complex.I := by
   simp  [phasePowerToComplex]
 
+/-- Phase powers add modulo 4: i^(a+b) = i^((a+b) mod 4). -/
+lemma phasePowerToComplex_add (a b : Fin 4) :
+  phasePowerToComplex a * phasePowerToComplex b = phasePowerToComplex (a + b) := by
+  -- Since i^4 = 1, we have i^(a+b) = i^((a+b) mod 4)
+  -- Prove by case analysis on all 16 combinations
+  fin_cases a <;> fin_cases b <;> simp [phasePowerToComplex]
+
+/-- Matrix multiplication of Pauli operators matches their group multiplication.
+
+This is a fundamental property connecting the abstract group structure with
+the matrix representation. For Pauli operators P and Q, if P.mulOp Q = ⟨p, R⟩,
+then P.toMatrix * Q.toMatrix = phasePowerToComplex p • R.toMatrix.
+
+This means that multiplying the matrix representations of two Pauli operators
+gives the same result as:
+1. Multiplying them abstractly using `mulOp` (which may introduce a phase)
+2. Converting the result to a matrix and scaling by that phase
+-/
+lemma PauliOperator.toMatrix_mul (P Q : PauliOperator) :
+  P.toMatrix * Q.toMatrix =
+  phasePowerToComplex (P.mulOp Q).phasePower • (P.mulOp Q).operator.toMatrix := by
+  cases P <;> cases Q <;> simp
+  · exact Xmat_mul_Ymat
+  · simp only [Xmat_mul_Zmat, neg_smul]
+  · simp only [Ymat_mul_Xmat, neg_smul]
+  · simp only [Ymat_mul_Zmat]
+  · simp only [Zmat_mul_Xmat]
+  · simp only [Zmat_mul_Ymat, neg_smul]
+
 /-- Convert a Pauli group element to its matrix representation. -/
 noncomputable def toMatrix (p : PauliGroupElement) : Matrix QubitBasis QubitBasis ℂ :=
   phasePowerToComplex p.phasePower • p.operator.toMatrix
@@ -169,6 +205,30 @@ instance : One PauliGroupElement := ⟨one⟩
 @[simp] lemma Y_def : Y = ⟨0, PauliOperator.Y⟩ := rfl
 @[simp] lemma Z_def : Z = ⟨0, PauliOperator.Z⟩ := rfl
 
+/-- The identity group element maps to the identity matrix. -/
+@[simp] lemma toMatrix_one : (1 : PauliGroupElement).toMatrix = 1 := by
+  simp [toMatrix, one_def, PauliOperator.toMatrix_I, phasePowerToComplex_0]
+
+/-- Group multiplication corresponds to matrix multiplication.
+
+This is the group element version of `PauliOperator.toMatrix_mul`, showing that
+the matrix representation is a group homomorphism.
+-/
+lemma toMatrix_mul (p q : PauliGroupElement) :
+  (p * q).toMatrix = p.toMatrix * q.toMatrix := by
+  simp [toMatrix, mul, PauliOperator.toMatrix_mul]
+  cases p.operator <;> cases q.operator <;>
+  simp[← phasePowerToComplex_add, smul_smul, mul_comm, mul_assoc]
+
+/-- Group inverse corresponds to matrix inverse.
+
+Since Pauli matrices are unitary, their matrix inverse equals their group inverse.
+-/
+lemma toMatrix_inv (p : PauliGroupElement) :
+  (p⁻¹).toMatrix = (p.toMatrix)⁻¹ := by
+  -- TODO: This requires proving that Pauli group elements are unitary
+  -- For now, we can prove it using the fact that p * p⁻¹ = 1 and toMatrix_mul
+  sorry
 
 /-- The identity element acts as identity on the right. -/
 @[simp] lemma mul_one (p : PauliGroupElement) : p * 1 = p := by

@@ -74,6 +74,18 @@ def ofList (ops : List PauliOperator) (h : ops.length = n) :
 def toList (op : NQubitPauliOperator n) : List PauliOperator :=
   List.ofFn op
 
+/-- The identity operator's matrix representation is the identity matrix.
+
+This follows from:
+- Each qubit has the identity operator I
+- `PauliOperator.I.toMatrix = 1` (the 2×2 identity matrix)
+- The tensor product of identity matrices is the identity matrix
+-/
+lemma identity_toMatrix (n : ℕ) :
+  (identity n).toMatrix = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
+  ext b₁ b₂
+  sorry
+
 end NQubitPauliOperator
 
 /-!
