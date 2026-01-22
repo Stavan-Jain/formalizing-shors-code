@@ -1,6 +1,30 @@
 import Foundations.Basic
 import Foundations.Gates
 
+/-!
+# Tensor Products
+
+This file defines tensor products for quantum gates and states, which are fundamental
+operations in quantum computing for combining multiple quantum systems.
+
+## Tensor Products of Gates
+
+The tensor product of two quantum gates `G₁ : QuantumGate α` and `G₂ : QuantumGate β`
+produces a gate `G₁ ⊗ᵍ G₂ : QuantumGate (α × β)` that acts independently on the two
+subsystems. The matrix representation is the Kronecker product of the individual gate matrices.
+
+## Tensor Products of States
+
+The tensor product of two quantum states `ψ : QuantumState α` and `φ : QuantumState β`
+produces a state `ψ ⊗ₛ φ : QuantumState (α × β)` representing the joint system.
+The vector representation multiplies amplitudes component-wise.
+
+## Key Properties
+
+- Tensor products preserve unitarity (tensor of unitary gates is unitary)
+- Tensor products preserve normalization (tensor of normalized states is normalized)
+- The Kronecker product satisfies `(A ⊗ B)ᴴ = Aᴴ ⊗ Bᴴ`
+-/
 namespace Quantum
 
 open Matrix
