@@ -3,6 +3,7 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import Mathlib.Algebra.Group.Defs
+import Mathlib.Algebra.Star.Basic
 import Foundations.Basic
 import Foundations.Gates
 import Foundations.Tensor
@@ -169,12 +170,13 @@ def phasePowerToComplex (k : Fin 4) : ℂ :=
 @[simp] lemma phasePowerToComplex_3 : phasePowerToComplex 3 = -Complex.I := by
   simp  [phasePowerToComplex]
 
-/-- Phase powers add modulo 4: i^(a+b) = i^((a+b) mod 4). -/
+/-- Product of phase powers: phasePowerToComplex a * phasePowerToComplex b =
+phasePowerToComplex (a + b). -/
 lemma phasePowerToComplex_add (a b : Fin 4) :
   phasePowerToComplex a * phasePowerToComplex b = phasePowerToComplex (a + b) := by
   fin_cases a <;> fin_cases b <;> simp [phasePowerToComplex]
 
-/-- Phase powers add for three terms: i^(a+b+c) = i^a * i^b * i^c. -/
+/-- Phase powers multiply as i^a * i^b * i^c = i^{a+b+c}. -/
 lemma phasePowerToComplex_add3 (a b c : Fin 4) :
   phasePowerToComplex a * phasePowerToComplex b * phasePowerToComplex c =
   phasePowerToComplex (a + b + c) := by
@@ -189,6 +191,19 @@ lemma phasePowerToComplex_star (k : Fin 4) :
   · symm
     have h : (-3 : Fin 4) = 1 := by decide
     simp [h]
+
+/-- Convert a phase power to the corresponding unit complex number. -/
+def phasePowerToUnitComplex (k : Fin 4) : UnitComplex :=
+  match k with
+  | 0 => UnitComplex.one
+  | 1 => UnitComplex.I
+  | 2 => UnitComplex.negOne
+  | 3 => UnitComplex.negI
+
+@[simp] lemma phasePowerToUnitComplex_coe (k : Fin 4) :
+  (phasePowerToUnitComplex k : ℂ) = phasePowerToComplex k := by
+  fin_cases k <;> simp [phasePowerToUnitComplex, phasePowerToComplex,
+    UnitComplex.one_coe, UnitComplex.negOne_coe, UnitComplex.I_coe, UnitComplex.negI_coe]
 
 /-- Matrix multiplication of Pauli operators matches their group multiplication.
 
@@ -206,29 +221,13 @@ lemma PauliOperator.toMatrix_mul (P Q : PauliOperator) :
   · simp only [Zmat_mul_Xmat]
   · simp only [Zmat_mul_Ymat, neg_smul]
 
-/-- Scalar multiplication by a unit complex number preserves unitarity. -/
-lemma mem_unitaryGroup_smul {c : ℂ} {M : Matrix QubitBasis QubitBasis ℂ}
-  (h_unit : c * star c = 1) (h_unitary : M ∈ Matrix.unitaryGroup QubitBasis ℂ) :
-  c • M ∈ Matrix.unitaryGroup QubitBasis ℂ := by
-  rw [Matrix.mem_unitaryGroup_iff]
-  rw [star_eq_conjTranspose, conjTranspose_smul, smul_mul, Matrix.mul_smul]
-  rw [← MulAction.mul_smul, h_unit, one_smul]
-  exact Matrix.mem_unitaryGroup_iff.1 h_unitary
-
-/-- Phase powers produce unit complex numbers. -/
-lemma phasePowerToComplex_isUnit (k : Fin 4) :
-  phasePowerToComplex k * star (phasePowerToComplex k) = 1 := by
-  fin_cases k <;> simp [phasePowerToComplex]
-
 /-- Convert a Pauli group element to a quantum gate.
 
 This is the primary representation. For `⟨k, P⟩` representing `i^k * P`,
-we scale the base gate `P.toGate` by `phasePowerToComplex k`.
+we scale the base gate `P.toGate` by the unit complex `phasePowerToUnitComplex k`.
 -/
 noncomputable def toGate (p : PauliGroupElement) : OneQubitGate :=
-  ⟨phasePowerToComplex p.phasePower • (PauliOperator.toGate p.operator).val,
-   mem_unitaryGroup_smul (phasePowerToComplex_isUnit p.phasePower)
-     ((PauliOperator.toGate p.operator).property)⟩
+  phasePowerToUnitComplex p.phasePower • (PauliOperator.toGate p.operator)
 
 /-- The identity element of the Pauli group: I with phase 1. -/
 def one : PauliGroupElement := ⟨0, PauliOperator.I⟩
@@ -264,6 +263,7 @@ instance : One PauliGroupElement := ⟨one⟩
 
 @[simp] lemma mul_eq (p q : PauliGroupElement) : p * q = mul p q := rfl
 @[simp] lemma inv_eq (p : PauliGroupElement) : p⁻¹ = inv p := rfl
+@[simp] lemma inv_operator (p : PauliGroupElement) : (p⁻¹).operator = p.operator := rfl
 @[simp] lemma one_def : (1 : PauliGroupElement) = ⟨0, PauliOperator.I⟩ := rfl
 @[simp] lemma X_def : X = ⟨0, PauliOperator.X⟩ := rfl
 @[simp] lemma Y_def : Y = ⟨0, PauliOperator.Y⟩ := rfl
@@ -319,39 +319,14 @@ lemma toGate_mul (p q : PauliGroupElement) : toGate (p * q) = toGate p * toGate 
 /-- `toGate` preserves inverse. -/
 lemma toGate_inv (p : PauliGroupElement) : toGate (p⁻¹) = (toGate p)⁻¹ := by
   apply Subtype.ext
-  -- Show the underlying matrices are equal: toMatrix (p⁻¹) = star (toMatrix p)
-  -- Goal: (toGate (p⁻¹)).val = ((toGate p)⁻¹).val
-  rw [toGate_val]
-  -- Goal: toMatrix (p⁻¹) = ((toGate p)⁻¹).val
-  rw [gate_inv_val (toGate p)]
-  -- Goal: toMatrix (p⁻¹) = star (toGate p).val
-  rw [toGate_val]
-  -- Goal: toMatrix (p⁻¹) = star (toMatrix p)
-  -- Expand both sides
-  simp only [toMatrix, toGate]
-  -- Goal: phasePowerToComplex (-p.phasePower) • ↑(p.operator.toGate) =
-  --       star (phasePowerToComplex p.phasePower • ↑(p.operator.toGate))
-  -- Star distributes over scalar multiplication: star (c • M) = star c • star M
-  rw [star_smul]
-  -- Goal: phasePowerToComplex (-p.phasePower) • ↑(p.operator.toGate) =
-  --       star (phasePowerToComplex p.phasePower) • star ↑(p.operator.toGate)
-
-  rw [phasePowerToComplex_star]
-  -- Goal: phasePowerToComplex (-p.phasePower) • ↑(p.inv.operator.toGate) =
-  --       phasePowerToComplex (-p.phasePower) • star ↑(p.operator.toGate)
-  -- First, simplify p.inv.operator = p.operator (since inv doesn't change the operator)
+  rw [toGate_val, gate_inv_val (toGate p), toGate_val]
+  simp only [toMatrix, toGate, smul_UnitComplex_gate_val, phasePowerToUnitComplex_coe, inv_operator]
   simp [inv]
-  -- Goal: phasePowerToComplex (-p.phasePower) • p.operator.toMatrix =
-  --       phasePowerToComplex (-p.phasePower) • star (p.operator.toMatrix)
-  -- Cancel the common scalar factor using congr
+  conv_rhs => arg 1; rw [starRingEnd_apply, phasePowerToComplex_star p.phasePower]
   congr 1
-  -- Goal: p.operator.toMatrix = star (p.operator.toMatrix)
-  -- This follows from Pauli operators being Hermitian: star (P.toMatrix) = P.toMatrix
-  -- Prove by case analysis on the operator
-  cases p.operator <;> simp [PauliOperator.toMatrix, star_eq_conjTranspose]
-  · matrix_expand[Xmat]
-  · matrix_expand[Ymat]
-  · matrix_expand[Zmat]
+  cases p.operator <;>
+  rw [PauliOperator.toMatrix, star_eq_conjTranspose] <;>
+  matrix_expand[Xmat, Ymat, Zmat]
 
 /-- The identity element acts as identity on the right. -/
 @[simp] lemma mul_one (p : PauliGroupElement) : p * 1 = p := by
