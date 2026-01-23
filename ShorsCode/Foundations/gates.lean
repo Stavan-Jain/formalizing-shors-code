@@ -328,6 +328,29 @@ by
               Zmat_hermitian Zmat_involutary
   exact (Matrix.mem_unitaryGroup_iff.mpr h.1)
 
+/-- Hadamard gate matrix. -/
+noncomputable def Hmat : Matrix QubitBasis QubitBasis ℂ :=
+  (1 / Real.sqrt 2) • !![1, 1; 1, -1]
+
+lemma Hmat_hermitian : Hermitian Hmat := by matrix_expand[Hmat]
+
+lemma Hmat_involutary : Involutary Hmat := by matrix_expand[Hmat]
+
+@[simp] lemma Hmat_sq : Hmat * Hmat = 1 := Hmat_involutary
+
+lemma Hmat_mem_unitaryGroup :
+  Hmat ∈ Matrix.unitaryGroup QubitBasis ℂ :=
+by
+  have h := unitary_of_hermitian_involutary Hmat_hermitian Hmat_involutary
+  have hU : Hmat * Hmatᴴ = 1 := h.1
+  exact (Matrix.mem_unitaryGroup_iff.mpr hU)
+
+/-- Hadamard gate as a one-qubit gate. -/
+noncomputable def H : OneQubitGate :=
+{ val      := Hmat
+, property := Hmat_mem_unitaryGroup }
+
+
 /-- Pauli Z as a one-qubit gate. -/
 noncomputable def Z : OneQubitGate :=
 { val := Zmat
@@ -337,6 +360,7 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_X : (X : Matrix QubitBasis QubitBasis ℂ) = Xmat := rfl
 @[simp] lemma coe_Y : (Y : Matrix QubitBasis QubitBasis ℂ) = Ymat := rfl
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
+@[simp] lemma coe_H : (H : Matrix QubitBasis QubitBasis ℂ) = Hmat := rfl
 
 @[simp] lemma inv_I : I⁻¹ = I := by
   ext
@@ -353,6 +377,10 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma inv_Z : Z⁻¹ = Z := by
   ext
   rw [gate_inv_val, coe_Z, star_eq_conjTranspose, (Hermitian_def Zmat).1 Zmat_hermitian]
+
+@[simp] lemma inv_H : H⁻¹ = H := by
+  ext
+  rw [gate_inv_val, coe_H, star_eq_conjTranspose, (Hermitian_def Hmat).1 Hmat_hermitian]
 
 @[simp] lemma X_on_ket0 : X • ket0 = ket1 := by
   vec_expand_simp [Xmat, ket0, ket1]
