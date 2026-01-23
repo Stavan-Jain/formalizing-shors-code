@@ -404,7 +404,46 @@ lemma PauliOperator.commutes_iff (P Q : PauliOperator) :
 /-- Two Pauli group elements commute if and only if their operators commute. -/
 lemma commutes_iff (p q : PauliGroupElement) :
   p * q = q * p ↔ p.operator.mulOp q.operator = q.operator.mulOp p.operator := by
-  sorry
+  constructor
+  · -- Forward direction: if p * q = q * p, then operators commute
+    intro h
+    -- By extensionality of p * q = q * p, we get both phase and operator equality
+    -- Extract the operator equality from the multiplication
+    have h_op : (p * q).operator = (q * p).operator := by
+      rw [h]
+    -- Unfold the multiplication to see the operator structure
+    simp [mul, mul_eq] at h_op
+    -- Extract the phase equality
+    have h_phase : (p * q).phasePower = (q * p).phasePower := by
+      rw [h]
+    simp [mul, mul_eq] at h_phase
+    -- Now use extensionality to show p.operator.mulOp q.operator = q.operator.mulOp p.operator
+    ext
+    · simp [add_comm] at h_phase;
+      rw [h_phase]
+    · exact h_op
+  · -- Backward direction: if operators commute, then p * q = q * p
+    intro h
+    -- Use extensionality to show p * q = q * p
+    ext
+    · -- Phase powers must be equal
+      simp [mul, mul_eq]
+      -- From h: p.operator.mulOp q.operator = q.operator.mulOp p.operator
+      -- So their phase powers are equal
+      have h_phase : (p.operator.mulOp q.operator).phasePower =
+                     (q.operator.mulOp p.operator).phasePower := by
+        rw [h]
+      -- Now we need: p.phasePower + q.phasePower + (p.operator.mulOp q.operator).phasePower =
+      --              q.phasePower + p.phasePower + (q.operator.mulOp p.operator).phasePower
+      rw [h_phase, add_comm (p.phasePower) (q.phasePower)]
+    · -- Operators must be equal
+      simp [mul, mul_eq]
+      -- From h: p.operator.mulOp q.operator = q.operator.mulOp p.operator
+      -- So their operators are equal
+      have h_op : (p.operator.mulOp q.operator).operator =
+                  (q.operator.mulOp p.operator).operator := by
+        rw [h]
+      exact h_op
 
 
 /-- Symmetry of commutation: if p commutes with q, then q commutes with p. -/

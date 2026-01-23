@@ -54,6 +54,18 @@ namespace NQubitPauliOperator
 def identity (n : ℕ) : NQubitPauliOperator n :=
   fun _ => PauliOperator.I
 
+/-- The X n-qubit Pauli operator (X ⊗ X ⊗ ... ⊗ X). -/
+def X (n : ℕ) : NQubitPauliOperator n :=
+  fun _ => PauliOperator.X
+
+/-- The Y n-qubit Pauli operator (Y ⊗ Y ⊗ ... ⊗ Y). -/
+def Y (n : ℕ) : NQubitPauliOperator n :=
+  fun _ => PauliOperator.Y
+
+/-- The Z n-qubit Pauli operator (Z ⊗ Z ⊗ ... ⊗ Z). -/
+def Z (n : ℕ) : NQubitPauliOperator n :=
+  fun _ => PauliOperator.Z
+
 /-- Extract the Pauli operator at a specific qubit position. -/
 def get (op : NQubitPauliOperator n) (i : Fin n) : PauliOperator := op i
 
@@ -169,6 +181,16 @@ def phase (p : NQubitPauliGroupElement n) : Fin 4 := p.phasePower
 
 /-- Extract the n-qubit Pauli operator. -/
 def ops (p : NQubitPauliGroupElement n) : NQubitPauliOperator n := p.operators
+
+/-- Construct an n-qubit Pauli group element from an operator with phase 0 (i.e., no phase). -/
+def ofOperator (op : NQubitPauliOperator n) : NQubitPauliGroupElement n :=
+  ⟨0, op⟩
+
+@[simp] lemma ofOperator_phasePower (op : NQubitPauliOperator n) :
+  (ofOperator op).phasePower = 0 := rfl
+
+@[simp] lemma ofOperator_operators (op : NQubitPauliOperator n) :
+  (ofOperator op).operators = op := rfl
 
 -- Simp lemmas for the identity element
 @[simp] lemma one_phasePower (n : ℕ) : (one n).phasePower = 0 := rfl
@@ -418,71 +440,93 @@ Two n-qubit Pauli group elements commute if and only if they commute qubit-wise.
 The phase factors don't affect commutation since they're scalars.
 -/
 
-/-- Two n-qubit Pauli group elements commute if and only if they commute at every qubit position.
-
-This follows from the fact that multiplication is computed qubit-by-qubit, so the
-elements commute globally if and only if they commute locally at each qubit.
+/-!
+## Helper Lemmas for Commutation Proofs
 -/
-lemma commutes_iff (p q : NQubitPauliGroupElement n) :
-  p * q = q * p ↔ ∀ i : Fin n,
-  (p.operators i).mulOp (q.operators i) = (q.operators i).mulOp (p.operators i) := by
-  constructor
-  · intro h i
-    -- Extract qubit-wise commutation from global commutation
-    simp [mul, mulOp] at h
-    have h_op :
-    (mulOp p.operators q.operators).operators = (mulOp q.operators p.operators).operators := by
-      cases h
-      sorry
-    -- At qubit i, the operators must commute
-    have h_i :
-    (mulOp p.operators q.operators).operators i = (mulOp q.operators p.operators).operators i :=
-      congrFun h_op i
-    simp [mulOp] at h_i
-    -- Extract the phase and operator equality
-    ext
-    · -- Phase parts: they must be equal mod 4
-      have h_phase_eq :
-      (mulOp p.operators q.operators).phasePower = (mulOp q.operators p.operators).phasePower := by
-        cases h
-        sorry
-      -- The phase at qubit i contributes to the total phase
-      -- If all qubits commute, the total phase contributions are equal
-      sorry -- This requires more detailed phase analysis
-    · -- Operator parts: must be equal at each qubit
-      exact h_i
-  · intro h
-    ext
-    · -- Phase parts: if all qubits commute, total phases are equal
-      simp [mul, mulOp]
-      -- Sum of phase contributions from commuting operators
-      sorry -- Requires showing sum of phase contributions is equal when operators commute
-    · -- Operator parts: if all qubits commute, operators are equal
-      simp [mul, mulOp]
-      sorry
 
-/-- Two n-qubit Pauli elements commute if their operators commute qubit-wise (simplified version).
+/-- The operator at qubit i in the result of mulOp is the operator from the
+    single-qubit multiplication. -/
+private lemma mulOp_operators_at (p q : NQubitPauliOperator n) (i : Fin n) :
+  (mulOp p q).operators i = ((p i).mulOp (q i)).operator := rfl
 
-This is a more practical criterion: check if at each qubit, either the operators are equal
-or one is the identity.
+/-- The phase power in mulOp is the sum of phase powers from all qubit multiplications. -/
+private lemma mulOp_phasePower (p q : NQubitPauliOperator n) :
+  (mulOp p q).phasePower =
+    (Finset.univ : Finset (Fin n)).sum (fun i => ((p i).mulOp (q i)).phasePower) := rfl
+
+/-- If two functions are equal pointwise, their sums over Finset.univ are equal. -/
+private lemma sum_eq_of_pointwise_eq {α : Type*} [AddCommMonoid α] {f g : Fin n → α}
+  (h : ∀ i, f i = g i) :
+  (Finset.univ : Finset (Fin n)).sum f = (Finset.univ : Finset (Fin n)).sum g :=
+  Finset.sum_congr rfl (fun i _ => h i)
+
+/-- If operators commute qubit-wise, then the phase contributions are equal at each qubit. -/
+private lemma phasePower_eq_of_commutes_qubitwise {p q : NQubitPauliOperator n}
+  (h : ∀ i : Fin n, (p i).mulOp (q i) = (q i).mulOp (p i)) :
+  ∀ i : Fin n, ((p i).mulOp (q i)).phasePower = ((q i).mulOp (p i)).phasePower := by
+  intro i
+  rw [h i]
+
+/-- If operators commute qubit-wise, then the total phase contributions are equal. -/
+private lemma mulOp_phasePower_eq_of_commutes_qubitwise {p q : NQubitPauliOperator n}
+  (h : ∀ i : Fin n, (p i).mulOp (q i) = (q i).mulOp (p i)) :
+  (mulOp p q).phasePower = (mulOp q p).phasePower := by
+  simp [mulOp_phasePower]
+  apply sum_eq_of_pointwise_eq
+  exact phasePower_eq_of_commutes_qubitwise h
+
+/-- If operators commute qubit-wise, then the operators are equal at each qubit. -/
+private lemma mulOp_operators_eq_of_commutes_qubitwise {p q : NQubitPauliOperator n}
+  (h : ∀ i : Fin n, (p i).mulOp (q i) = (q i).mulOp (p i)) :
+  ∀ i : Fin n, (mulOp p q).operators i = (mulOp q p).operators i := by
+  intro i
+  simp [mulOp_operators_at]
+  rw [h i]
+
+/-- Two n-qubit Pauli group elements commute if they commute at every qubit position.
+
+This follows from the fact that multiplication is computed qubit-by-qubit, so
+componentwise commutation implies global commutation.
 -/
-lemma commutes_iff_simple (p q : NQubitPauliGroupElement n) :
-  p * q = q * p ↔ ∀ i : Fin n,
-    (p.operators i = q.operators i) ∨
-    (p.operators i = PauliOperator.I) ∨
-    (q.operators i = PauliOperator.I) := by
-  rw [commutes_iff]
+lemma commutes_of_componentwise_commutes (p q : NQubitPauliGroupElement n) :
+  (∀ i : Fin n,
+  (p.operators i).mulOp (q.operators i) = (q.operators i).mulOp (p.operators i))
+  → p * q = q * p := by
+    intro h
+    ext
+    · simp [mul, mul_eq]
+      rw [mulOp_phasePower_eq_of_commutes_qubitwise h]
+      simp [add_comm]
+    · simp [mul, mul_eq]
+      rw [mulOp_operators_eq_of_commutes_qubitwise h]
+
+/-- Every element commutes with itself. -/
+@[simp] lemma commutes_refl (p : NQubitPauliGroupElement n) : p * p = p * p := rfl
+
+/-- Symmetry of commutation: if p commutes with q, then q commutes with p. -/
+lemma commutes_symm (p q : NQubitPauliGroupElement n) :
+  (p * q = q * p) ↔ (q * p = p * q) := by
   constructor
-  · intro h i
-    -- Use single-qubit commutation criterion
-    have h_i := h i
-    rw [PauliGroupElement.PauliOperator.commutes_iff] at h_i
-    exact h_i
-  · intro h i
-    -- Use single-qubit commutation criterion in reverse
-    have h_i := h i
-    rw [PauliGroupElement.PauliOperator.commutes_iff]
-    exact h_i
+  · intro h; symm; exact h
+  · intro h; symm; exact h
+
+/-- The identity element commutes with all elements. -/
+lemma commutes_one_left (p : NQubitPauliGroupElement n) : 1 * p = p * 1 := by
+  rw [one_mul, mul_one]
+
+/-- All elements commute with the identity. -/
+lemma commutes_one_right (p : NQubitPauliGroupElement n) : p * 1 = 1 * p := by
+  rw [mul_one, one_mul]
+
+/-- If one element is the identity, they commute. -/
+lemma commutes_if_one_identity_left (p : NQubitPauliGroupElement n) :
+  (1 : NQubitPauliGroupElement n) * p = p * (1 : NQubitPauliGroupElement n) :=
+  commutes_one_left p
+
+/-- If one element is the identity, they commute. -/
+lemma commutes_if_one_identity_right (p : NQubitPauliGroupElement n) :
+  p * (1 : NQubitPauliGroupElement n) = (1 : NQubitPauliGroupElement n) * p :=
+  commutes_one_right p
 
 @[simp] lemma toMatrix_one (n : ℕ) :
   ((1 : NQubitPauliGroupElement n).toMatrix) = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
