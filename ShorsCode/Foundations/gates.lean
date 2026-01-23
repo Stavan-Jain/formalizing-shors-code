@@ -86,6 +86,8 @@ def UnitComplex.one : UnitComplex := ⟨1, by simp⟩
 /-- The complex number `-1` as a unit complex number. -/
 def UnitComplex.negOne : UnitComplex := ⟨-1, by simp⟩
 
+@[simp] lemma UnitComplex.one_coe : (UnitComplex.one : ℂ) = 1 := rfl
+@[simp] lemma UnitComplex.negOne_coe : (UnitComplex.negOne : ℂ) = -1 := rfl
 @[simp] lemma UnitComplex.I_coe : (UnitComplex.I : ℂ) = Complex.I := rfl
 @[simp] lemma UnitComplex.negI_coe : (UnitComplex.negI : ℂ) = -Complex.I := rfl
 
