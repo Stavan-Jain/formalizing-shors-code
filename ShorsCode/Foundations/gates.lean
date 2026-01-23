@@ -54,6 +54,65 @@ abbrev ThreeQubitGate : Type := QuantumGate ThreeQubitBasis
   rw [gate_inv_val]
   exact Matrix.mem_unitaryGroup_iff'.1 G.2
 
+/-- Gate multiplication corresponds to matrix multiplication. -/
+@[simp] lemma gate_mul_val
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (G₁ G₂ : QuantumGate α) :
+  (G₁ * G₂).val = G₁.val * G₂.val := rfl
+
+/-- The identity gate. -/
+@[simp] lemma gate_one_val
+{α : Type*} [Fintype α] [DecidableEq α] :
+  (1 : QuantumGate α).val = (1 : Matrix α α ℂ) := rfl
+
+/-- The type of unit complex numbers (those with absolute value 1). -/
+def UnitComplex : Type := {z : ℂ // z * star z = 1}
+
+instance : Coe UnitComplex ℂ := ⟨Subtype.val⟩
+
+/-- Construct a unit complex number from a complex number and a proof that it
+has absolute value 1. -/
+def UnitComplex.mk (z : ℂ) (h : z * star z = 1) : UnitComplex := ⟨z, h⟩
+
+/-- The complex number `i` as a unit complex number. -/
+def UnitComplex.I : UnitComplex := ⟨Complex.I, by simp [Complex.conj_I, Complex.I_mul_I]⟩
+
+/-- The complex number `-i` as a unit complex number. -/
+def UnitComplex.negI : UnitComplex := ⟨-Complex.I, by simp [Complex.conj_I, Complex.I_mul_I]⟩
+
+/-- The complex number `1` as a unit complex number. -/
+def UnitComplex.one : UnitComplex := ⟨1, by simp⟩
+
+/-- The complex number `-1` as a unit complex number. -/
+def UnitComplex.negOne : UnitComplex := ⟨-1, by simp⟩
+
+@[simp] lemma UnitComplex.I_coe : (UnitComplex.I : ℂ) = Complex.I := rfl
+@[simp] lemma UnitComplex.negI_coe : (UnitComplex.negI : ℂ) = -Complex.I := rfl
+
+/-- Scalar multiplication of a gate by a unit complex number.
+
+This preserves unitarity: if `G` is unitary and `c` is a unit complex number,
+then `c • G` is also unitary. -/
+noncomputable instance smul_UnitComplex_QuantumGate
+  {α : Type*} [Fintype α] [DecidableEq α] :
+  SMul UnitComplex (QuantumGate α) :=
+{ smul := fun c G => by
+    classical
+    refine ⟨(c : ℂ) • G.val, ?_⟩
+    rw [Matrix.mem_unitaryGroup_iff]
+    have h_unit : (c : ℂ) * star (c : ℂ) = 1 := c.property
+    have h_G : G.val * star G.val = 1 := Matrix.mem_unitaryGroup_iff.1 G.2
+    simp only [Matrix.smul_mul, star_smul]
+    rw [Matrix.mul_smul]
+    simp only [smul_smul]
+    simp only [h_unit, h_G, one_smul]
+    }
+
+@[simp] lemma smul_UnitComplex_gate_val
+  {α : Type*} [Fintype α] [DecidableEq α]
+  (c : UnitComplex) (G : QuantumGate α) :
+  (c • G).val = (c : ℂ) • G.val := rfl
+
 open Lean.Parser.Tactic in
 open Lean in
 /--
@@ -361,6 +420,48 @@ noncomputable def Z : OneQubitGate :=
 @[simp] lemma coe_Y : (Y : Matrix QubitBasis QubitBasis ℂ) = Ymat := rfl
 @[simp] lemma coe_Z : (Z : Matrix QubitBasis QubitBasis ℂ) = Zmat := rfl
 @[simp] lemma coe_H : (H : Matrix QubitBasis QubitBasis ℂ) = Hmat := rfl
+
+/-- Pauli gate cross products: X * Y = iZ -/
+@[simp] lemma X_mul_Y : X * Y = UnitComplex.I • Z :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.I_coe]
+    exact Xmat_mul_Ymat)
+
+/-- Pauli gate cross products: Y * X = -iZ -/
+@[simp] lemma Y_mul_X : Y * X = UnitComplex.negI • Z :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.negI_coe]
+    exact Ymat_mul_Xmat)
+
+/-- Pauli gate cross products: Y * Z = iX -/
+@[simp] lemma Y_mul_Z : Y * Z = UnitComplex.I • X :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.I_coe]
+    exact Ymat_mul_Zmat)
+
+/-- Pauli gate cross products: Z * Y = -iX -/
+@[simp] lemma Z_mul_Y : Z * Y = UnitComplex.negI • X :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.negI_coe]
+    exact Zmat_mul_Ymat)
+
+/-- Pauli gate cross products: Z * X = iY -/
+@[simp] lemma Z_mul_X : Z * X = UnitComplex.I • Y :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.I_coe]
+    exact Zmat_mul_Xmat)
+
+/-- Pauli gate cross products: X * Z = -iY -/
+@[simp] lemma X_mul_Z : X * Z = UnitComplex.negI • Y :=
+  Subtype.ext (by
+    simp only [gate_mul_val, smul_UnitComplex_gate_val, coe_X, coe_Y, coe_Z,
+      UnitComplex.negI_coe]
+    exact Xmat_mul_Zmat)
 
 @[simp] lemma inv_I : I⁻¹ = I := by
   ext
