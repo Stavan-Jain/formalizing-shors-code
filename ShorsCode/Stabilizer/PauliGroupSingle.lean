@@ -105,6 +105,11 @@ operator's matrix representation.
 @[simp] lemma toMatrix_Y : PauliOperator.Y.toMatrix = Ymat := rfl
 @[simp] lemma toMatrix_Z : PauliOperator.Z.toMatrix = Zmat := rfl
 
+@[simp] lemma toGate_I : PauliOperator.I.toGate = (Quantum.I : OneQubitGate) := rfl
+@[simp] lemma toGate_X : PauliOperator.X.toGate = (Quantum.X : OneQubitGate) := rfl
+@[simp] lemma toGate_Y : PauliOperator.Y.toGate = (Quantum.Y : OneQubitGate) := rfl
+@[simp] lemma toGate_Z : PauliOperator.Z.toGate = (Quantum.Z : OneQubitGate) := rfl
+
 /-- Multiplication of Pauli operators, returning a Pauli group element.
 
 The multiplication rules:
