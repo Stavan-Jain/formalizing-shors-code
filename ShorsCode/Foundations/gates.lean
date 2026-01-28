@@ -204,8 +204,40 @@ lemma gate_preserves_norm
   (G : QuantumGate α) :
   ∀ v : Vector α, norm (Matrix.mulVec (G.val) v) = norm v :=
 by
-  -- we'll prove this later using the fact that G is unitary
-  sorry
+  have h_unitary : ∀ (v : Quantum.Vector α), (star G.val).mulVec (G.val.mulVec v) = v := by
+    -- Since $G$ is unitary, we have $G.val * star G.val = 1$, which implies
+    -- that $(star G.val) * G.val = 1$ as well.
+    have h_unitary : (star G.val) * G.val = 1 := by
+      convert Matrix.mul_eq_one_comm.mp ( G.2.2 ) using 1;
+    exact fun v => by rw [ Matrix.mulVec_mulVec, h_unitary, Matrix.one_mulVec ] ;
+  -- By definition of norm, we have that ‖Gv‖^2 = ⟨Gv, Gv⟩.
+  have h_norm_sq : ∀ (v : Quantum.Vector α),
+      (Quantum.norm (G.val.mulVec v))^2 =
+      ∑ i, (G.val.mulVec v i) * star (G.val.mulVec v i) := by
+    simp +decide [ Quantum.norm, Complex.mul_conj, Complex.normSq_eq_norm_sq ];
+    norm_cast ; norm_num [ Real.sq_sqrt ( Finset.sum_nonneg fun _ _ => sq_nonneg _ ) ];
+  -- By definition of inner product, we have that ⟨Gv, Gv⟩ = v* G* G v.
+  have h_inner : ∀ (v : Quantum.Vector α),
+      ∑ i, (G.val.mulVec v i) * star (G.val.mulVec v i) =
+      ∑ i, v i * star (v i) := by
+    intro v
+    have h_inner : ∑ i, (G.val.mulVec v i) * star (G.val.mulVec v i) =
+        ∑ i, (star (G.val)).mulVec (G.val.mulVec v) i * star (v i) := by
+      simp +decide [ Matrix.mulVec, dotProduct, mul_assoc, mul_comm, mul_left_comm,
+        Finset.mul_sum _ _ _, Finset.sum_mul ];
+      exact Finset.sum_comm.trans (
+        Finset.sum_congr rfl fun _ _ =>
+        Finset.sum_congr rfl fun _ _ =>
+        Finset.sum_congr rfl fun _ _ => by ring )
+    generalize_proofs at *; (
+    rw [ h_inner, h_unitary ]);
+  -- By combining h_norm_sq and h_inner, we can conclude that the square of
+  -- the norm of Gv is equal to the square of the norm of v.
+  intros v
+  have := h_norm_sq v
+  have := h_inner v
+  simp_all +decide [ Complex.normSq, Complex.sq_norm ];
+  simp_all +decide [ Complex.ext_iff, Finset.sum_add_distrib, mul_comm ]
 
 noncomputable def applyGate
   {α : Type*} [Fintype α] [DecidableEq α]
