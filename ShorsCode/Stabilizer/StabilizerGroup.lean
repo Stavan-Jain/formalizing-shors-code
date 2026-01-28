@@ -182,10 +182,9 @@ lemma IsStabilizedBy.mul {g h : NQubitPauliGroupElement n} {v : NQubitVec n}
   (hg : IsStabilizedVec g v) (hh : IsStabilizedVec h v) :
   IsStabilizedVec (g * h) v := by
   simp only [IsStabilizedVec, toMatrix_mul] at *
-  -- We need: (g * h).toMatrix.mulVec v = v
-  -- Using: g.toMatrix.mulVec v = v and h.toMatrix.mulVec v = v
-  -- And: (g * h).toMatrix = g.toMatrix * h.toMatrix (from toMatrix_mul)
-  sorry -- TODO: Requires toMatrix_mul and matrix multiplication properties
+  have h : (g.toMatrix * h.toMatrix) *ᵥ v = g.toMatrix *ᵥ (h.toMatrix *ᵥ v) := by
+    exact Eq.symm (mulVec_mulVec v g.toMatrix h.toMatrix)
+  rw [h, hh, hg]
 
 /-- If a state is stabilized by g, then it is stabilized by g⁻¹.
 
@@ -195,11 +194,11 @@ g⁻¹ • v = g⁻¹ • (g • v) = (g⁻¹ * g) • v = 1 • v = v.
 lemma IsStabilizedBy.inv {g : NQubitPauliGroupElement n} {v : NQubitVec n}
   (hg : IsStabilizedVec g v) :
   IsStabilizedVec (g⁻¹) v := by
-  simp [IsStabilizedVec] at *
-  -- We need: (g⁻¹).toMatrix.mulVec v = v
-  -- Using: g.toMatrix.mulVec v = v
-  -- And: (g⁻¹).toMatrix = (g.toMatrix)⁻¹ (from toMatrix_inv)
-  sorry -- TODO: Requires toMatrix_inv and matrix inverse properties
+  simp only[IsStabilizedVec] at *
+  rw [toMatrix_inv, ←hg, mulVec_mulVec]
+  have h: (g.toMatrix⁻¹ * g.toMatrix) = 1 := by sorry
+  rw [h, one_mulVec, hg]
+
 
 /-- If a state is stabilized by g, then it is stabilized by g when applied to a quantum state. -/
 lemma IsStabilizedBy.state {g : NQubitPauliGroupElement n} {ψ : NQubitState n}
