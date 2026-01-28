@@ -1,7 +1,7 @@
-import RepetitionCode.EncodeDecode
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.RepetitionCode.EncodeDecode
+import ShorsCode.Foundations.Basic
+import ShorsCode.Foundations.Gates
+import ShorsCode.Foundations.Tensor
 
 namespace Quantum
 /-- Aggregate amplitude for majority-0 basis states. -/
@@ -187,7 +187,7 @@ lemma recover_state_X_q1_3_encode_state (ψ : Qubit) :
   simp [recover_state, encode_state, hvijk]
 
 
-theorem repetition_corrects_single_X_q1 (ψ : QubitState) :
+theorem repetition_corrects_single_X_q1 (ψ : Qubit) :
   decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ.val := by
   -- use the recovery lemma plus `decode_state_encode_state`
   have h := recover_state_X_q1_3_encode_state ψ
