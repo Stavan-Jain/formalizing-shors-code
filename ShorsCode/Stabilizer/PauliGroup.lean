@@ -127,6 +127,24 @@ lemma identity_toMatrix (n : ℕ) :
       exact h
     · simp [hi]
 
+/-- The matrix of an n-qubit Pauli operator is unitary.
+
+Each single-qubit Pauli matrix is unitary; the n-qubit matrix is their tensor product.
+-/
+lemma toMatrix_mem_unitaryGroup (op : NQubitPauliOperator n) :
+  op.toMatrix ∈ Matrix.unitaryGroup (NQubitBasis n) ℂ := by
+  sorry -- TODO: Prove via Kronecker product or induction on n
+
+/-- Convert an n-qubit Pauli operator to its underlying gate.
+
+This is the primary representation connecting the Stabilizer layer to Foundations.
+The matrix representation is recovered as `(op.toGate).val = op.toMatrix`.
+-/
+noncomputable def toGate (op : NQubitPauliOperator n) : QuantumGate (NQubitBasis n) :=
+  ⟨op.toMatrix, toMatrix_mem_unitaryGroup op⟩
+
+/-- Connection between `toGate` and `toMatrix` for n-qubit operators. -/
+@[simp] lemma toGate_val (op : NQubitPauliOperator n) : (op.toGate).val = op.toMatrix := rfl
 
 end NQubitPauliOperator
 
@@ -165,10 +183,25 @@ namespace NQubitPauliGroupElement
 
 This multiplies the global phase by the tensor product of the individual Pauli matrices.
 The matrix representation is a group homomorphism: `(p * q).toMatrix = p.toMatrix * q.toMatrix`.
+Derived from `toGate` by taking the underlying matrix.
 -/
 noncomputable def toMatrix (p : NQubitPauliGroupElement n) :
   Matrix (NQubitBasis n) (NQubitBasis n) ℂ :=
   PauliGroupElement.phasePowerToComplex p.phasePower • p.operators.toMatrix
+
+/-- Convert an n-qubit Pauli group element to its underlying gate.
+
+This is the primary representation connecting the Stabilizer layer to Foundations.
+For `⟨k, op⟩` representing `i^k * (P₀ ⊗ ... ⊗ P_{n-1})`, we scale the base gate
+`op.toGate` by the unit complex `phasePowerToUnitComplex k`.
+-/
+noncomputable def toGate (p : NQubitPauliGroupElement n) : QuantumGate (NQubitBasis n) :=
+  PauliGroupElement.phasePowerToUnitComplex p.phasePower • (p.operators.toGate)
+
+/-- Connection between `toGate` and `toMatrix`. -/
+lemma toGate_val (p : NQubitPauliGroupElement n) : (toGate p).val = toMatrix p :=
+  by simp [toMatrix, toGate, smul_UnitComplex_gate_val, NQubitPauliOperator.toGate_val,
+    PauliGroupElement.phasePowerToUnitComplex_coe]
 
 /-- The identity element of the n-qubit Pauli group: I ⊗ I ⊗ ... ⊗ I with phase 1. -/
 def one (n : ℕ) : NQubitPauliGroupElement n :=
@@ -528,8 +561,15 @@ lemma commutes_if_one_identity_right (p : NQubitPauliGroupElement n) :
 
 @[simp] lemma toMatrix_one (n : ℕ) :
   ((1 : NQubitPauliGroupElement n).toMatrix) = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
-  simp [toMatrix]
-  sorry
+  simp only [toMatrix, one_def, PauliGroupElement.phasePowerToComplex_0, one_smul,
+    NQubitPauliOperator.identity_toMatrix]
+
+/-- The identity n-qubit Pauli group element maps to the identity gate. -/
+@[simp] lemma toGate_one (n : ℕ) :
+  toGate (1 : NQubitPauliGroupElement n) = (1 : QuantumGate (NQubitBasis n)) := by
+  apply Subtype.ext
+  rw [toGate_val, toMatrix_one]
+  rfl
 
 /-- Group multiplication corresponds to matrix multiplication.
 
@@ -553,6 +593,16 @@ lemma toMatrix_inv (p : NQubitPauliGroupElement n) :
   -- For now, we can prove it using p * p⁻¹ = 1 and toMatrix_mul
   sorry -- TODO: Prove using unitarity of Pauli matrices
 
+/-- `toGate` is a group homomorphism. -/
+lemma toGate_mul (p q : NQubitPauliGroupElement n) : toGate (p * q) = toGate p * toGate q := by
+  apply Subtype.ext
+  rw [toGate_val, gate_mul_val, toGate_val, toGate_val]
+  exact toMatrix_mul p q
+
+/-- `toGate` preserves inverse. -/
+lemma toGate_inv (p : NQubitPauliGroupElement n) : toGate (p⁻¹) = (toGate p)⁻¹ := by
+  apply Subtype.ext
+  rw [toGate_val, toMatrix_inv p, gate_inv_val (toGate p), ← gate_val_inv (toGate p), ← toGate_val]
 
 end NQubitPauliGroupElement
 
