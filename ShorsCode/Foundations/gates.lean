@@ -20,6 +20,9 @@ abbrev TwoQubitGate : Type := QuantumGate TwoQubitBasis
 
 abbrev ThreeQubitGate : Type := QuantumGate ThreeQubitBasis
 
+/-- Gate type for n-qubit systems (indexed by NQubitBasis n). -/
+abbrev NQubitGate (n : ℕ) : Type := QuantumGate (NQubitBasis n)
+
 @[simp] lemma gate_inv_val
   {α : Type*} [Fintype α] [DecidableEq α]
   (G : QuantumGate α) :
