@@ -1,7 +1,5 @@
 import ShorsCode.RepetitionCode.EncodeDecode
-import ShorsCode.Foundations.Basic
-import ShorsCode.Foundations.Gates
-import ShorsCode.Foundations.Tensor
+import ShorsCode.Foundations.Foundations
 
 namespace Quantum
 

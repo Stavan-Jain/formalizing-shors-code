@@ -94,7 +94,7 @@ lemma norm_tensorVec_of_norm1
   norm (tensorVec v w) = 1 :=
 by
   unfold Quantum.tensorVec;
-  simp [mul_pow];
+  simp [mul_pow]
   erw [ Finset.sum_product ]
   simp_all [ ←Finset.mul_sum]
 

@@ -2,8 +2,8 @@ import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
-import ShorsCode.Foundations.Basic
 import Mathlib.LinearAlgebra.UnitaryGroup
+import ShorsCode.Foundations.Basic
 
 namespace Quantum
 open Matrix
