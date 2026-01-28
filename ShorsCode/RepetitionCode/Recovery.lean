@@ -121,43 +121,62 @@ lemma norm_recoverVec_ket011 : norm (recoverVec ket011.val) = 1 := by
   rw [norm_recoverVec_eq_one_iff]
   simp [maj0_amp, maj1_amp]
 
-lemma norm_recoverVec_X_q1_3_encodeVec :
-  norm (recoverVec (X_q1_3 • (encode_state ket0))) = norm ket000.val := by
-  rw [ket000.property, norm_recoverVec_eq_one_iff]
-  rw [encode_state_ket0]
-  simp only [zeroL]
-  have h2 : X_q1_3 • ket000 = ket100 := X_q1_3_on_ket000
-  sorry
+/-- The norm of `recoverVec (X_q1_3 • encodeVec v)` equals the norm of `v`.
+    Follows from `recoverVec_X_q1_3_encodeVec` and `encodeVec_norm`. -/
+lemma norm_recoverVec_X_q1_3_encodeVec (v : QubitVec) :
+  norm (recoverVec ((X_q1_3.val).mulVec (encodeVec v))) = norm v := by
+  convert norm_recoverVec_eq_one_iff _;
+  swap;
+  · exact encodeVec v
+  have h_encodeVec : ∀ v : Quantum.QubitVec, Quantum.encodeVec v = v 0 •
+  Quantum.ket000.val + v 1 • Quantum.ket111.val := by
+    intro v; ext ijk; simp [encodeVec, ket000, ket111];
+    split_ifs <;> simp_all +decide;
+  have h_X_q1_3 : ∀ v : Quantum.QubitVec,
+  (Quantum.X_q1_3 : Matrix Quantum.ThreeQubitBasis
+   Quantum.ThreeQubitBasis ℂ).mulVec (v 0 • Quantum.ket000.val + v 1 • Quantum.ket111.val)
+  = v 0 • Quantum.ket100.val + v 1 • Quantum.ket011.val := by
+    intro v; ext i; fin_cases i <;> norm_num [ Matrix.mulVec ] ;
+    all_goals erw [ Quantum.X_q1_3 ] ; simp +decide [ Quantum.X, Quantum.Xmat ] ;
+  simp_all +decide [ Quantum.norm ];
+  unfold Quantum.recoverVec
+  norm_num [ Finset.sum_add_distrib, Finset.mul_sum, Finset.sum_mul,
+  Quantum.maj0_amp, Quantum.maj1_amp ]
+  ring_nf
+  erw [ Finset.sum_eq_add ( ( 0, 0, 0 ) ) ( ( 1, 1, 1 ) ) ] <;> norm_num
+  grind only [cases Or]
 
+/-- For a normalized qubit state ψ, the recovered vector after a single X error on qubit 1
+    has norm 1. -/
 lemma norm_recoverVec_X_q1_3_encode_state (ψ : Qubit) :
   norm (recoverVec ((X_q1_3.val).mulVec (encodeVec ψ.val))) = 1 := by
-  -- Use norm_recoverVec_X_q1_3_encodeVec and ψ.property (norm ψ.val = 1)
-  sorry
+  convert norm_recoverVec_X_q1_3_encodeVec ψ |> Eq.trans <| ψ.property
 
-noncomputable def recover_state (ψ : ThreeQubitState) : ThreeQubitState :=
-by
-  classical
-  refine ⟨recoverVec ψ.val, ?_⟩
-  -- TODO: show this recovered state has norm 1 for the inputs
-  admit
+/-- Recover a three-qubit state to the codespace by majority vote.
+    Requires a proof that the recovered vector has norm 1. -/
+noncomputable def recover_state (ψ : ThreeQubitState)
+  (h : norm (recoverVec ψ.val) = 1) : ThreeQubitState :=
+  ⟨recoverVec ψ.val, h⟩
 
 -- These should probably not be marked as simp
 @[simp] lemma recover_state_X_q1_3_encode_ket0 :
-  recover_state (X_q1_3 • encode_state ket0) = encode_state ket0 := by
+  recover_state (X_q1_3 • encode_state ket0) (norm_recoverVec_X_q1_3_encode_state ket0) =
+    encode_state ket0 := by
   classical
   have h1 : encode_state ket0 = ket000 := encode_state_ket0
   have h2 : X_q1_3 • ket000 = ket100 := X_q1_3_on_ket000
-  suffices recover_state ket100 = ket000 by
+  suffices recover_state ket100 (norm_recoverVec_ket100) = ket000 by
     simpa [h1, h2]
   ext ijk
   simp [recover_state, recoverVec, maj0_amp, maj1_amp]
 
 @[simp] lemma recover_state_X_q1_3_encode_ket1 :
-  recover_state (X_q1_3 • encode_state ket1) = encode_state ket1 := by
+  recover_state (X_q1_3 • encode_state ket1) (norm_recoverVec_X_q1_3_encode_state ket1) =
+    encode_state ket1 := by
   classical
   have h1 : encode_state ket1 = ket111 := encode_state_ket1
   have h2 : X_q1_3 • ket111 = ket011 := X_q1_3_on_ket111
-  suffices recover_state ket011 = ket111 by
+  suffices recover_state ket011 (norm_recoverVec_ket011) = ket111 by
     simpa [h1, h2]
   ext ijk
   simp [recover_state, recoverVec,
@@ -241,7 +260,8 @@ lemma recoverVec_X_q1_3_encodeVec (v : QubitVec) :
           simp [henc]
 
 lemma recover_state_X_q1_3_encode_state (ψ : Qubit) :
-  recover_state (X_q1_3 • encode_state ψ) = encode_state ψ := by
+  recover_state (X_q1_3 • encode_state ψ) (norm_recoverVec_X_q1_3_encode_state ψ) =
+    encode_state ψ := by
   ext ijk
   have hv : recoverVec ((X_q1_3.val).mulVec (encodeVec ψ.val)) = encodeVec ψ.val :=
     recoverVec_X_q1_3_encodeVec (v := ψ.val)
@@ -251,7 +271,8 @@ lemma recover_state_X_q1_3_encode_state (ψ : Qubit) :
 
 
 theorem repetition_corrects_single_X_q1 (ψ : Qubit) :
-  decode_state (recover_state (X_q1_3 • encode_state ψ)) = ψ.val := by
+  decode_state (recover_state (X_q1_3 • encode_state ψ) (norm_recoverVec_X_q1_3_encode_state ψ)) =
+    ψ.val := by
   -- use the recovery lemma plus `decode_state_encode_state`
   have h := recover_state_X_q1_3_encode_state ψ
   -- rewrite with h, then apply decode∘encode = id
