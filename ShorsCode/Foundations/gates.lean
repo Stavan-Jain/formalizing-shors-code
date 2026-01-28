@@ -2,7 +2,7 @@ import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
-import Foundations.Basic
+import ShorsCode.Foundations.Basic
 import Mathlib.LinearAlgebra.UnitaryGroup
 
 namespace Quantum
@@ -205,7 +205,7 @@ lemma gate_preserves_norm
   ∀ v : Vector α, norm (Matrix.mulVec (G.val) v) = norm v :=
 by
   -- we'll prove this later using the fact that G is unitary
-  admit
+  sorry
 
 noncomputable def applyGate
   {α : Type*} [Fintype α] [DecidableEq α]

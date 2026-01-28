@@ -1,7 +1,7 @@
-import RepetitionCode.EncodeDecode
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.RepetitionCode.EncodeDecode
+import ShorsCode.Foundations.Basic
+import ShorsCode.Foundations.Gates
+import ShorsCode.Foundations.Tensor
 
 namespace Quantum
 
@@ -30,7 +30,7 @@ lemma qubitVec_eq_lincomb (v : QubitVec) :
   funext q
   fin_cases q <;> simp [basisVec]
 
-lemma qubit_val_eq_lincomb_kets (ψ : QubitState) :
+lemma qubit_val_eq_lincomb_kets (ψ : Qubit) :
   (ψ.val : QubitVec) = (ψ.val 0) • (ket0.val) + (ψ.val 1) • (ket1.val) := by
   ext q
   fin_cases q <;>
@@ -112,13 +112,13 @@ lemma F_correct (v : QubitVec) :
     _   = (X.val).mulVec v := by exact (congrArg (fun w => (X.val).mulVec w) hv.symm)
 
 /-- Your requested correctness statement (on `.val` fields). -/
-lemma logicalX_correct_val (ψ : QubitState) :
+lemma logicalX_correct_val (ψ : Qubit) :
   decode_state (LogicalX • encode_state ψ) = (X • ψ).val := by
   simpa [F, decode_state_def, smul_QState_val, encode_state_val] using
     (F_correct (v := ψ.val))
 
 /-- Correctness as an equality of vectors (decode_state now returns QubitVec). -/
-lemma logicalX_correct_state (ψ : QubitState) :
+lemma logicalX_correct_state (ψ : Qubit) :
   decode_state (LogicalX • encode_state ψ) = (X • ψ).val := by
   exact logicalX_correct_val ψ
 

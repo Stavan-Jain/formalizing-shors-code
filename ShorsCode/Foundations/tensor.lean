@@ -1,5 +1,5 @@
-import Foundations.Basic
-import Foundations.Gates
+import ShorsCode.Foundations.Basic
+import ShorsCode.Foundations.Gates
 
 /-!
 # Tensor Products

@@ -3,9 +3,7 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import Mathlib.Algebra.Group.Defs
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.Foundations.Foundations
 import ShorsCode.Stabilizer.PauliGroupSingle
 
 namespace Quantum

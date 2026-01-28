@@ -1,6 +1,6 @@
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.Foundations.Basic
+import ShorsCode.Foundations.Gates
+import ShorsCode.Foundations.Tensor
 
 namespace Quantum
 
@@ -139,7 +139,7 @@ lemma encodeVec_smul (a : ℂ) (v : QubitVec) :
   simp [encodeVec, Pi.smul_apply]
 
 /-- Semantic encoder on states: wrap `encodeVec` and use `encodeVec_norm` for normalization. -/
-noncomputable def encode_state (ψ : QubitState) : ThreeQubitState :=
+noncomputable def encode_state (ψ : Qubit) : ThreeQubitState :=
   ⟨encodeVec ψ.val, by
     -- here you'd use `encodeVec_norm` and `ψ.property : norm ψ.val = 1`
     have := ψ.property
@@ -147,7 +147,7 @@ noncomputable def encode_state (ψ : QubitState) : ThreeQubitState :=
     exact this⟩
 
 /-- Unfolding lemma: value field of `encode_state`. -/
-@[simp] lemma encode_state_val (ψ : QubitState) :
+@[simp] lemma encode_state_val (ψ : Qubit) :
   (encode_state ψ).val = encodeVec ψ.val := rfl
 
 @[simp] lemma encode_state_ket0 :
@@ -196,7 +196,7 @@ noncomputable def decode_state (ψ : ThreeQubitState) : QubitVec :=
 @[simp] lemma decode_state_def (ψ : ThreeQubitState) :
   decode_state ψ = decodeVec ψ.val := rfl
 
-@[simp] lemma decode_state_encode_state (ψ : QubitState) :
+@[simp] lemma decode_state_encode_state (ψ : Qubit) :
   decode_state (encode_state ψ) = ψ.val := by
   simp [decode_state, encode_state, decodeVec_encodeVec]
 

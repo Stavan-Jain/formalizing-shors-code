@@ -4,9 +4,7 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Algebra.Group.Subgroup.Basic
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.Foundations.Foundations
 import ShorsCode.Stabilizer.PauliGroupSingle
 import ShorsCode.Stabilizer.PauliGroup
 
@@ -183,7 +181,7 @@ also fixes v: (g * h) • v = g • (h • v) = g • v = v.
 lemma IsStabilizedBy.mul {g h : NQubitPauliGroupElement n} {v : NQubitVec n}
   (hg : IsStabilizedVec g v) (hh : IsStabilizedVec h v) :
   IsStabilizedVec (g * h) v := by
-  simp [IsStabilizedVec] at *
+  simp only [IsStabilizedVec, toMatrix_mul] at *
   -- We need: (g * h).toMatrix.mulVec v = v
   -- Using: g.toMatrix.mulVec v = v and h.toMatrix.mulVec v = v
   -- And: (g * h).toMatrix = g.toMatrix * h.toMatrix (from toMatrix_mul)
@@ -260,13 +258,13 @@ namespace RepetitionCode3
 
 /-- Z₁Z₂: Z on qubits 0 and 1, I on qubit 2. -/
 def Z1Z2 : NQubitPauliGroupElement 3 :=
-  ⟨0, ((NQubitPauliOperator.identity 3).set ⟨0, by decide⟩ PauliOperator.Z).set
-  ⟨1, by decide⟩ PauliOperator.Z⟩
+  ⟨0, ((NQubitPauliOperator.identity 3).set 0 PauliOperator.Z).set
+  1 PauliOperator.Z⟩
 
 /-- Z₂Z₃: I on qubit 0, Z on qubits 1 and 2. -/
 def Z2Z3 : NQubitPauliGroupElement 3 :=
-  ⟨0, ((NQubitPauliOperator.identity 3).set ⟨1, by decide⟩ PauliOperator.Z).set
-  ⟨2, by decide⟩ PauliOperator.Z⟩
+  ⟨0, ((NQubitPauliOperator.identity 3).set 1 PauliOperator.Z).set
+  2 PauliOperator.Z⟩
 
 /-- Z₁Z₂ and Z₂Z₃ commute.
 
@@ -276,26 +274,21 @@ This follows from the fact that:
 - At qubit 2: Z₁Z₂ has I, Z₂Z₃ has Z → they commute
 -/
 lemma Z1Z2_commutes_Z2Z3 : Z1Z2 * Z2Z3 = Z2Z3 * Z1Z2 := by
+  apply commutes_of_componentwise_commutes
+  intro i
   -- Use the componentwise commutation lemma from PauliGroup.lean
-  have h : ∀ i : Fin 3,
-  (Z1Z2.operators i).mulOp (Z2Z3.operators i) = (Z2Z3.operators i).mulOp (Z1Z2.operators i) := by
-    intro i
-    fin_cases i
-    · -- qubit 0: Z1Z2 has Z, Z2Z3 has I → I commutes with Z
-      simp [Z1Z2, Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
-    · -- qubit 1: both have Z → Z commutes with Z
-      simp [Z1Z2, Z2Z3, NQubitPauliOperator.set]
-    · -- qubit 2: Z1Z2 has I, Z2Z3 has Z → I commutes with Z
-      simp [Z1Z2, Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
-  -- Now apply the commutation lemma from PauliGroup.lean
+  fin_cases i
+  · -- qubit 0: Z1Z2 has Z, Z2Z3 has I → I commutes with Z
+    simp [Z1Z2, Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
+  · -- qubit 1: both have Z → Z commutes with Z
+    simp [Z1Z2, Z2Z3, NQubitPauliOperator.set]
+  · -- qubit 2: Z1Z2 has I, Z2Z3 has Z → I commutes with Z
+    simp [Z1Z2, Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
 
-  -- So we can apply the lemma directly
-  exact NQubitPauliGroupElement.commutes_of_componentwise_commutes Z1Z2 Z2Z3 h
-
-/-- Z₁Z₂ commutes with itself (trivial but useful for completeness). -/
+/-- Z₁Z₂ commutes with itself -/
 lemma Z1Z2_commutes_self : Z1Z2 * Z1Z2 = Z1Z2 * Z1Z2 := rfl
 
-/-- Z₂Z₃ commutes with itself (trivial but useful for completeness). -/
+/-- Z₂Z₃ commutes with itself -/
 lemma Z2Z3_commutes_self : Z2Z3 * Z2Z3 = Z2Z3 * Z2Z3 := rfl
 
 /-- Z₁Z₂ has phase 0 (no global phase). -/
@@ -305,27 +298,27 @@ lemma Z2Z3_commutes_self : Z2Z3 * Z2Z3 = Z2Z3 * Z2Z3 := rfl
 @[simp] lemma Z2Z3_phasePower : Z2Z3.phasePower = 0 := rfl
 
 /-- Z₁Z₂ has Z on qubit 0. -/
-@[simp] lemma Z1Z2_qubit0 : Z1Z2.operators ⟨0, by decide⟩ = PauliOperator.Z := by
+@[simp] lemma Z1Z2_qubit0 : Z1Z2.operators 0 = PauliOperator.Z := by
   simp [Z1Z2, NQubitPauliOperator.set]
 
 /-- Z₁Z₂ has Z on qubit 1. -/
-@[simp] lemma Z1Z2_qubit1 : Z1Z2.operators ⟨1, by decide⟩ = PauliOperator.Z := by
+@[simp] lemma Z1Z2_qubit1 : Z1Z2.operators 1 = PauliOperator.Z := by
   simp [Z1Z2, NQubitPauliOperator.set]
 
 /-- Z₁Z₂ has I on qubit 2. -/
-@[simp] lemma Z1Z2_qubit2 : Z1Z2.operators ⟨2, by decide⟩ = PauliOperator.I := by
+@[simp] lemma Z1Z2_qubit2 : Z1Z2.operators 2 = PauliOperator.I := by
   simp [Z1Z2, NQubitPauliOperator.set, NQubitPauliOperator.identity]
 
 /-- Z₂Z₃ has I on qubit 0. -/
-@[simp] lemma Z2Z3_qubit0 : Z2Z3.operators ⟨0, by decide⟩ = PauliOperator.I := by
+@[simp] lemma Z2Z3_qubit0 : Z2Z3.operators 0 = PauliOperator.I := by
   simp [Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
 
 /-- Z₂Z₃ has Z on qubit 1. -/
-@[simp] lemma Z2Z3_qubit1 : Z2Z3.operators ⟨1, by decide⟩ = PauliOperator.Z := by
+@[simp] lemma Z2Z3_qubit1 : Z2Z3.operators 1 = PauliOperator.Z := by
   simp [Z2Z3, NQubitPauliOperator.set]
 
 /-- Z₂Z₃ has Z on qubit 2. -/
-@[simp] lemma Z2Z3_qubit2 : Z2Z3.operators ⟨2, by decide⟩ = PauliOperator.Z := by
+@[simp] lemma Z2Z3_qubit2 : Z2Z3.operators 2 = PauliOperator.Z := by
   simp [Z2Z3, NQubitPauliOperator.set]
 
 /-- Z₁Z₂ squared equals the identity (since Z * Z = I). -/

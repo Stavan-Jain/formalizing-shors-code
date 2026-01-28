@@ -4,9 +4,7 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Tactic
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Algebra.Star.Basic
-import Foundations.Basic
-import Foundations.Gates
-import Foundations.Tensor
+import ShorsCode.Foundations.Foundations
 
 namespace Quantum
 open Matrix
