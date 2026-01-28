@@ -93,7 +93,10 @@ lemma norm_tensorVec_of_norm1
   (hv : norm v = 1) (hw : norm w = 1) :
   norm (tensorVec v w) = 1 :=
 by
-  admit
+  unfold Quantum.tensorVec;
+  simp [mul_pow];
+  erw [ Finset.sum_product ]
+  simp_all [ ←Finset.mul_sum]
 
 /-- Tensor product of quantum states. -/
 noncomputable def tensorState
