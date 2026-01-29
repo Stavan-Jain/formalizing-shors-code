@@ -1,6 +1,6 @@
 # Quantum Error Correction in Lean
 
-This project formalizes foundational concepts in quantum error correction using the Lean 4 proof assistant, with the goal of a complete formalization of Stabilizer Code.
+This project formalizes foundational concepts in quantum error correction using the Lean 4 proof assistant, with the goal of a complete formalization of Stabilizer Codes.
 
 Along the way, it develops **definitions and lemmas** for reasoning about qubits, quantum states, and unitary operations, providing a verified foundation for quantum computing in Lean.
 
