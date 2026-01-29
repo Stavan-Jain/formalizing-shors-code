@@ -133,7 +133,33 @@ Each single-qubit Pauli matrix is unitary; the n-qubit matrix is their tensor pr
 -/
 lemma toMatrix_mem_unitaryGroup (op : NQubitPauliOperator n) :
   op.toMatrix ∈ Matrix.unitaryGroup (NQubitBasis n) ℂ := by
-  sorry -- TODO: Prove via Kronecker product or induction on n
+  convert Quantum.PauliGroupElement.toMatrix_mem_unitaryGroup _;
+  swap;
+  · exact ⟨ 0, Quantum.PauliOperator.X ⟩
+  constructor <;> intro h <;> simp [ Matrix.mem_unitaryGroup_iff];
+  ext i j ; simp +decide [ Matrix.mul_apply, Quantum.NQubitPauliOperator.toMatrix ];
+  have h_simp : ∀ (i j : NQubitBasis n), (∑ x : NQubitBasis n,
+  (∏ k : Fin n, (op k).toMatrix (i k) (x k)) *
+  (∏ k : Fin n, starRingEnd ℂ ((op k).toMatrix (j k) (x k)))) = (∏ k : Fin n,
+  (∑ x : QubitBasis, (op k).toMatrix (i k) x * starRingEnd ℂ ((op k).toMatrix (j k) x))) := by
+    simp +decide only [← Finset.prod_mul_distrib];
+    exact fun i j ↦
+      Eq.symm
+        (Fintype.prod_sum fun i_2 j_2 ↦
+          (op i_2).toMatrix (i i_2) j_2 * (starRingEnd ℂ) ((op i_2).toMatrix (j i_2) j_2));
+  -- Since each Pauli matrix is unitary, the sum of the products of the matrix
+  -- entries and their conjugates is 1 if i k equals j k and 0 otherwise.
+  have h_unitary : ∀ (k : Fin n) (i j : QubitBasis),
+  (∑ x : QubitBasis, (op k).toMatrix i x * starRingEnd ℂ
+  ((op k).toMatrix j x)) = if i = j then 1 else 0 := by
+    intro k i j; rcases h : op k with ( _ | _ | _ | _ ) <;> simp
+    <;> fin_cases i <;> fin_cases j <;>
+    simp [ Matrix.one_apply, Quantum.Xmat, Quantum.Ymat, Quantum.Zmat ];
+  simp_all +decide [ Matrix.one_apply ];
+  by_cases hi : i = j <;> simp +decide [ hi ];
+  exact Finset.prod_eq_zero ( Finset.mem_univ ( Classical.choose
+  ( Function.ne_iff.mp hi ) ) ) ( if_neg ( Classical.choose_spec
+  ( Function.ne_iff.mp hi ) ) )
 
 /-- Convert an n-qubit Pauli operator to its underlying gate.
 
@@ -578,10 +604,100 @@ the product of the matrices. This follows from the single-qubit case applied qub
 -/
 lemma toMatrix_mul (p q : NQubitPauliGroupElement n) :
   (p * q).toMatrix = p.toMatrix * q.toMatrix := by
-  -- This requires showing that the tensor product of matrix products equals
-  -- the product of tensor products, which is a standard property of Kronecker products.
-  -- For now, we mark it as needing more detailed proof
-  sorry -- TODO: Prove using properties of Kronecker products and phase multiplication
+    unfold Quantum.NQubitPauliGroupElement.toMatrix;
+    ext b₁ b₂;
+    -- By definition of matrix multiplication and the properties of the tensor
+    -- product, we can expand the right-hand side.
+    have h_expand : (p.operators.toMatrix * q.operators.toMatrix) b₁ b₂ =
+    ∑ k : Fin n → QubitBasis, (∏ i, (p.operators i).toMatrix (b₁ i) (k i)) *
+    (∏ i, (q.operators i).toMatrix (k i) (b₂ i)) := by
+      rfl;
+    -- By definition of matrix multiplication and the properties of the tensor
+    -- product, we can expand the right-hand side further.
+    have h_expand_further : ∑ k : Fin n → QubitBasis,
+    (∏ i, (p.operators i).toMatrix (b₁ i) (k i)) *
+    (∏ i, (q.operators i).toMatrix (k i) (b₂ i)) =
+    ∏ i, (∑ k : QubitBasis, (p.operators i).toMatrix (b₁ i) k *
+    (q.operators i).toMatrix k (b₂ i)) := by
+      simp only [← Finset.prod_mul_distrib];
+      exact
+        Eq.symm
+          (Fintype.prod_sum fun i j ↦
+            (p.operators i).toMatrix (b₁ i) j * (q.operators i).toMatrix j (b₂ i));
+    -- By definition of matrix multiplication and the properties of the tensor
+    -- product, we can expand the right-hand side further using the single-qubit
+    -- multiplication rule.
+    have h_expand_single_qubit :
+        ∀ i : Fin n,
+          (∑ k : QubitBasis,
+              (p.operators i).toMatrix (b₁ i) k * (q.operators i).toMatrix k (b₂ i)) =
+            Quantum.PauliGroupElement.phasePowerToComplex
+                (Quantum.PauliOperator.mulOp (p.operators i) (q.operators i)).phasePower *
+              (Quantum.PauliOperator.mulOp (p.operators i) (q.operators i)).operator.toMatrix
+                (b₁ i) (b₂ i) := by
+      intro i
+      have h_single_qubit :
+          ∀ (P Q : Quantum.PauliOperator),
+            (P.toMatrix * Q.toMatrix) =
+              Quantum.PauliGroupElement.phasePowerToComplex
+                  (Quantum.PauliOperator.mulOp P Q).phasePower •
+                (Quantum.PauliOperator.mulOp P Q).operator.toMatrix := by
+        exact fun P Q ↦ PauliGroupElement.PauliOperator.toMatrix_mul P Q
+      convert
+        congr_arg (fun m => m (b₁ i) (b₂ i)) (h_single_qubit (p.operators i) (q.operators i))
+          using 1
+    simp_all +decide [Finset.prod_mul_distrib, Matrix.mul_apply]
+    -- By definition of phasePowerToComplex, we can rewrite the right-hand side of the equation.
+    have h_phasePowerToComplex :
+        Quantum.PauliGroupElement.phasePowerToComplex (p.mul q).phasePower =
+          Quantum.PauliGroupElement.phasePowerToComplex p.phasePower *
+            Quantum.PauliGroupElement.phasePowerToComplex q.phasePower *
+            (∏ i,
+              Quantum.PauliGroupElement.phasePowerToComplex
+                ((p.operators i).mulOp (q.operators i)).phasePower) := by
+      have h_phasePowerToComplex :
+          ∀ (a b c : Fin 4),
+            Quantum.PauliGroupElement.phasePowerToComplex (a + b + c) =
+              Quantum.PauliGroupElement.phasePowerToComplex a *
+                Quantum.PauliGroupElement.phasePowerToComplex b *
+                Quantum.PauliGroupElement.phasePowerToComplex c := by
+        exact fun a b c ↦ Eq.symm (PauliGroupElement.phasePowerToComplex_add3 a b c)
+      convert
+        h_phasePowerToComplex p.phasePower q.phasePower
+            (∑ i : Fin n,
+              ((p.operators i).mulOp (q.operators i) |> Quantum.PauliGroupElement.phasePower))
+          using 1
+      have h_phasePowerToComplex :
+          ∀ (s : Finset (Fin n)),
+            (∏ i ∈ s,
+                Quantum.PauliGroupElement.phasePowerToComplex
+                  ((p.operators i).mulOp (q.operators i)).phasePower) =
+              Quantum.PauliGroupElement.phasePowerToComplex
+                (∑ i ∈ s, ((p.operators i).mulOp (q.operators i)).phasePower) := by
+        intro s
+        induction s using Finset.induction <;>
+          simp_all +decide [Finset.sum_insert, Finset.prod_insert]
+        (expose_names;
+          exact
+            PauliGroupElement.phasePowerToComplex_add
+              ((p.operators a).mulOp (q.operators a)).phasePower
+              (∑ i ∈ s, ((p.operators i).mulOp (q.operators i)).phasePower))
+      rw [h_phasePowerToComplex]
+    simp_all +decide [ mul_comm, mul_left_comm ];
+    convert
+      congr_arg
+          (fun x : ℂ =>
+            x *
+              (Quantum.PauliGroupElement.phasePowerToComplex p.phasePower *
+                Quantum.PauliGroupElement.phasePowerToComplex q.phasePower))
+          h_expand.symm using 1 <;>
+      ring_nf
+    · simp +decide [  mul_comm, mul_left_comm, NQubitPauliOperator.toMatrix ];
+      simp +decide [ NQubitPauliGroupElement.mul ];
+      simp +decide [  NQubitPauliGroupElement.mulOp ];
+      ring;
+    · simp +decide only [mul_comm, Finset.mul_sum _ _ _];
+      ac_rfl
 
 /-- Group inverse corresponds to matrix inverse.
 
@@ -591,7 +707,16 @@ lemma toMatrix_inv (p : NQubitPauliGroupElement n) :
   (p⁻¹).toMatrix = (p.toMatrix)⁻¹ := by
   -- This requires proving that Pauli group elements are unitary
   -- For now, we can prove it using p * p⁻¹ = 1 and toMatrix_mul
-  sorry -- TODO: Prove using unitarity of Pauli matrices
+  have h_unitary :
+      ∀ (p : NQubitPauliGroupElement n), p.toMatrix⁻¹ = p⁻¹.toMatrix := by
+    intro p
+    rw [Matrix.inv_eq_right_inv]
+    have h_unitary :
+        ∀ (p : NQubitPauliGroupElement n),
+          p.toMatrix * p⁻¹.toMatrix = (p * p⁻¹).toMatrix := by
+      exact fun p ↦ Eq.symm (toMatrix_mul p p⁻¹)
+    rw [h_unitary, mul_inv_cancel, toMatrix_one]
+  exact h_unitary p ▸ rfl
 
 /-- `toGate` is a group homomorphism. -/
 lemma toGate_mul (p q : NQubitPauliGroupElement n) : toGate (p * q) = toGate p * toGate q := by
