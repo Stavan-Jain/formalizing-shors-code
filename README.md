@@ -1,6 +1,6 @@
-# Shor's Code in Lean
+# Quantum Error Correction in Lean
 
-This project formalizes foundational concepts in quantum error correction using the Lean 4 proof assistant, building toward a complete formalization of **Shor's 9-qubit error-correcting code**.
+This project formalizes foundational concepts in quantum error correction using the Lean 4 proof assistant, with the goal of a complete formalization of Stabilizer Code.
 
 Along the way, it develops **definitions and lemmas** for reasoning about qubits, quantum states, and unitary operations, providing a verified foundation for quantum computing in Lean.
 
