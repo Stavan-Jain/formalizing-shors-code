@@ -78,7 +78,7 @@ lemma commutes_of_componentwise_commutes (p q : NQubitPauliGroupElement n) :
       rw [mulOp_operators_eq_of_commutes_qubitwise h]
 
 /-- Every element commutes with itself. -/
-@[simp] lemma commutes_refl (p : NQubitPauliGroupElement n) : p * p = p * p := rfl
+lemma commutes_refl (p : NQubitPauliGroupElement n) : p * p = p * p := rfl
 
 /-- Symmetry of commutation: if p commutes with q, then q commutes with p. -/
 lemma commutes_symm (p q : NQubitPauliGroupElement n) :
