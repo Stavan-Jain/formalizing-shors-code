@@ -192,13 +192,13 @@ lemma NQubitPauliOperator.trace_matrix_mul (p q : NQubitPauliOperator n) :
       rw [ Finset.prod_mul_distrib ];
     convert h_fubini using 1
 
+
+-- Provide decidable equality to state lemmas using `if p = q then ... else ...`.
+noncomputable instance : DecidableEq (NQubitPauliOperator n) := Classical.decEq _
 /-
 The trace of the product of two n-qubit Pauli operator matrices is 2^n if the
 operators are equal, and 0 otherwise.
 -/
--- Provide decidable equality to state lemmas using `if p = q then ... else ...`.
-noncomputable instance : DecidableEq (NQubitPauliOperator n) := Classical.decEq _
-
 lemma NQubitPauliOperator.trace_mul (p q : NQubitPauliOperator n) :
   (p.toMatrix * q.toMatrix).trace = if p = q then (2 : ℂ)^n else 0 := by
   rw [NQubitPauliOperator.trace_matrix_mul]
@@ -243,7 +243,7 @@ lemma toMatrix_inj (p q : NQubitPauliGroupElement n)
         norm_num [ Complex.ext_iff ];
       exact h_phase_eq _ _ h_phase;
     · unfold PauliGroupElement.phasePowerToComplex at h_phase; aesop;
-  cases p ; cases q ; aesop
+  cases p ; cases q ; simp_all
 
 /-!
 If two Pauli group elements induce the same gate (`toGate`), then they are equal.
