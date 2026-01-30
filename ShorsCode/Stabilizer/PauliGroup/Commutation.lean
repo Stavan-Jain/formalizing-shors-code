@@ -64,6 +64,13 @@ private lemma mulOp_operators_eq_of_commutes_qubitwise {p q : NQubitPauliOperato
   simp [mulOp_operators_at]
   rw [h i]
 
+/-- The `operators` part of n-qubit Pauli group multiplication is commutative
+(phase factors may differ). -/
+lemma operators_mul_comm (p q : NQubitPauliGroupElement n) :
+    (p * q).operators = (q * p).operators := by
+  ext i
+  simp [mul, mul_eq, mulOp_operators_at, PauliOperator.mulOp_operator_comm]
+
 /-- Two n-qubit Pauli group elements commute if they commute at every qubit position. -/
 lemma commutes_of_componentwise_commutes (p q : NQubitPauliGroupElement n) :
   (∀ i : Fin n,

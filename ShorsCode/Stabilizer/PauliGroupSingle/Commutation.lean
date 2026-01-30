@@ -48,6 +48,12 @@ lemma commutes_iff (p q : PauliGroupElement) :
         rw [h]
       exact h_op
 
+/-- The `operator` part of Pauli group multiplication is commutative
+(phase factors may differ). -/
+lemma operator_mul_comm (p q : PauliGroupElement) :
+    (p * q).operator = (q * p).operator := by
+  simp [mul, PauliOperator.mulOp_operator_comm]
+
 /-- Symmetry of commutation: if p commutes with q, then q commutes with p. -/
 lemma commutes_symm (p q : PauliGroupElement) :
   (p * q = q * p) ↔ (q * p = p * q) := by
