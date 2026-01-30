@@ -21,8 +21,7 @@ namespace NQubitPauliGroupElement
 
 @[simp] lemma toMatrix_one (n : ℕ) :
   ((1 : NQubitPauliGroupElement n).toMatrix) = (1 : Matrix (NQubitBasis n) (NQubitBasis n) ℂ) := by
-  simp only [toMatrix, one_def, PauliGroupElement.phasePowerToComplex_0, one_smul,
-    NQubitPauliOperator.identity_toMatrix]
+  simp [toMatrix, NQubitPauliOperator.identity_toMatrix]
 
 /-- The identity n-qubit Pauli group element maps to the identity gate. -/
 @[simp] lemma toGate_one (n : ℕ) :
@@ -114,11 +113,11 @@ lemma toMatrix_mul (p q : NQubitPauliGroupElement n) :
                 Quantum.PauliGroupElement.phasePowerToComplex q.phasePower))
           h_expand.symm using 1 <;>
       ring_nf
-    · simp +decide [  mul_comm, mul_left_comm, NQubitPauliOperator.toMatrix ];
-      simp +decide [ NQubitPauliGroupElement.mul ];
-      simp +decide [  NQubitPauliGroupElement.mulOp ];
+    · simp [ mul_comm, mul_left_comm, NQubitPauliOperator.toMatrix ];
+      simp [ NQubitPauliGroupElement.mul ];
+      simp [  NQubitPauliGroupElement.mulOp ];
       ring;
-    · simp +decide only [mul_comm, Finset.mul_sum _ _ _];
+    · simp only [mul_comm, Finset.mul_sum];
       ac_rfl
 
 /-- Group inverse corresponds to matrix inverse. -/
@@ -145,6 +144,17 @@ lemma toGate_mul (p q : NQubitPauliGroupElement n) : toGate (p * q) = toGate p *
 lemma toGate_inv (p : NQubitPauliGroupElement n) : toGate (p⁻¹) = (toGate p)⁻¹ := by
   apply Subtype.ext
   rw [toGate_val, toMatrix_inv p, gate_inv_val (toGate p), ← gate_val_inv (toGate p), ← toGate_val]
+
+lemma toMatrix_eq_iff_toGate_eq (p q : NQubitPauliGroupElement n)
+ : toMatrix p = toMatrix q ↔ toGate p = toGate q := by
+  sorry
+
+lemma eq_if_toMatrix_eq (p q : NQubitPauliGroupElement n)
+(h : toMatrix p = toMatrix q) : p = q := by
+  sorry
+
+lemma eq_if_toGate_eq (p q : NQubitPauliGroupElement n) (h : toGate p = toGate q) : p = q := by
+  sorry
 
 end NQubitPauliGroupElement
 
