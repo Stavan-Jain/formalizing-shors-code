@@ -86,7 +86,7 @@ noncomputable def mulOp : PauliOperator → PauliOperator → PauliGroupElement
 /-- The *operator* part of `mulOp` is commutative (the phase power may differ). -/
 lemma mulOp_operator_comm (P Q : PauliOperator) :
     (P.mulOp Q).operator = (Q.mulOp P).operator := by
-  cases P <;> cases Q <;> simp [mulOp]
+  cases P <;> cases Q <;> simp
 
 end PauliOperator
 
