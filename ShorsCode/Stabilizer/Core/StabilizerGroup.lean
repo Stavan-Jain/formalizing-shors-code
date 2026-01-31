@@ -139,13 +139,6 @@ lemma neg_identity_not_mem (S : StabilizerGroup n) : negIdentity n ∉ S.toSubgr
   S.no_neg_identity
 
 /-!
-# Helper Lemmas for Constructing Stabilizer Groups
-
-These lemmas make it easier to prove that a subgroup is abelian when constructing
-a `StabilizerGroup`.
--/
-
-/-!
 # Basic Properties of Stabilized States
 -/
 
@@ -154,7 +147,6 @@ lemma identity_stabilizes_vec (v : NQubitVec n) :
   IsStabilizedVec (1 : NQubitPauliGroupElement n) v := by
   simp only [IsStabilizedVec]
   rw [NQubitPauliGroupElement.toMatrix_one, one_mulVec]
-
 
 /-- The identity element stabilizes all quantum states. -/
 lemma identity_stabilizes (ψ : NQubitState n) : IsStabilizedBy (1 : NQubitPauliGroupElement n) ψ :=
@@ -168,16 +160,9 @@ lemma IsInCodespace.identity_stabilizes (ψ : NQubitState n) (S : StabilizerGrou
 
 /-!
 # Properties of Stabilized States
-
-These lemmas show how stabilization behaves under group operations, which is crucial
-for working with stabilizer groups and codespaces.
 -/
 
-/-- If a state is stabilized by g and h, then it is stabilized by g * h.
-
-This follows from the fact that if g and h both fix a vector v, then their product
-also fixes v: (g * h) • v = g • (h • v) = g • v = v.
--/
+/-- If a state is stabilized by g and h, then it is stabilized by g * h. -/
 lemma IsStabilizedBy.mul {g h : NQubitPauliGroupElement n} {v : NQubitVec n}
   (hg : IsStabilizedVec g v) (hh : IsStabilizedVec h v) :
   IsStabilizedVec (g * h) v := by
@@ -186,11 +171,7 @@ lemma IsStabilizedBy.mul {g h : NQubitPauliGroupElement n} {v : NQubitVec n}
     exact Eq.symm (mulVec_mulVec v g.toMatrix h.toMatrix)
   rw [h, hh, hg]
 
-/-- If a state is stabilized by g, then it is stabilized by g⁻¹.
-
-This follows from the fact that if g fixes v, then g⁻¹ also fixes v:
-g⁻¹ • v = g⁻¹ • (g • v) = (g⁻¹ * g) • v = 1 • v = v.
--/
+/-- If a state is stabilized by g, then it is stabilized by g⁻¹. -/
 lemma IsStabilizedBy.inv {g : NQubitPauliGroupElement n} {v : NQubitVec n}
   (hg : IsStabilizedVec g v) :
   IsStabilizedVec (g⁻¹) v := by
@@ -227,45 +208,32 @@ lemma IsStabilizedBy.inv {g : NQubitPauliGroupElement n} {v : NQubitVec n}
     simpa [one_mulVec] using h1
   exact h2.symm
 
-
 /-- If a state is stabilized by g, then it is stabilized by g when applied to a quantum state. -/
 lemma IsStabilizedBy.state {g : NQubitPauliGroupElement n} {ψ : NQubitState n}
   (hg : IsStabilizedVec g ψ.val) :
   IsStabilizedBy g ψ := hg
 
 /-- If a state is in the codespace, then applying any group element from the stabilizer
-    group to it (via multiplication) keeps it in the codespace.
-
-This is a key property: the codespace is invariant under the action of the stabilizer group.
--/
+    group to it (via multiplication) keeps it in the codespace. -/
 lemma IsInCodespace.mul {ψ : NQubitState n} {S : StabilizerGroup n}
   (h : IsInCodespace ψ S) {g : NQubitPauliGroupElement n}
   (_ : g ∈ S.toSubgroup) :
-  IsInCodespace ψ S := h -- Codespace membership is independent of which element we check
+  IsInCodespace ψ S := h
 
 /-- Alternative characterization: a state is in the codespace if and only if it is
-    stabilized by all elements in the stabilizer group.
-
-This is essentially the definition, but stated as a bidirectional equivalence for convenience.
--/
+    stabilized by all elements in the stabilizer group. -/
 lemma IsInCodespace.iff_all_stabilizers (ψ : NQubitState n) (S : StabilizerGroup n) :
   IsInCodespace ψ S ↔ ∀ g ∈ S.toSubgroup, IsStabilizedBy g ψ :=
   Iff.rfl
 
-/-- If a state is stabilized by g and h, then it is stabilized by g * h.
-
-This combines `IsStabilizedBy.mul` with the subgroup property.
--/
+/-- If a state is stabilized by g and h, then it is stabilized by g * h. -/
 lemma IsStabilizedBy.mul_in_group {g h : NQubitPauliGroupElement n} {ψ : NQubitState n}
   (hg_stab : IsStabilizedBy g ψ) (hh_stab : IsStabilizedBy h ψ) :
   IsStabilizedBy (g * h) ψ :=
   IsStabilizedBy.mul hg_stab hh_stab
 
 /-- If a state is stabilized by an element, then it is also stabilized by the inverse
-    of that element.
-
-This combines `IsStabilizedBy.inv` with the subgroup property.
--/
+    of that element. -/
 lemma IsStabilizedBy.inv_in_group {g : NQubitPauliGroupElement n} {ψ : NQubitState n}
   (hg_stab : IsStabilizedBy g ψ) :
   IsStabilizedBy (g⁻¹) ψ :=
@@ -274,3 +242,4 @@ lemma IsStabilizedBy.inv_in_group {g : NQubitPauliGroupElement n} {ψ : NQubitSt
 end StabilizerGroup
 
 end Quantum
+

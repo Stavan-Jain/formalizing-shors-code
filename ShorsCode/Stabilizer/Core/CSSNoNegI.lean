@@ -1,7 +1,7 @@
 import Mathlib.Tactic
-import ShorsCode.Stabilizer.StabilizerGroup
-import ShorsCode.Stabilizer.SubgroupLemmas
-import ShorsCode.Stabilizer.CSS
+import ShorsCode.Stabilizer.Core.StabilizerGroup
+import ShorsCode.Stabilizer.Core.SubgroupLemmas
+import ShorsCode.Stabilizer.Core.CSS
 
 namespace Quantum
 
