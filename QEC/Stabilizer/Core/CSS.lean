@@ -1,0 +1,283 @@
+import Mathlib.Algebra.Group.Subgroup.Lattice
+import Mathlib.Tactic
+import QEC.Stabilizer.PauliGroup
+
+namespace Quantum
+open scoped BigOperators
+
+/-!
+# CSS utilities
+
+This file introduces reusable predicates and closure lemmas for working with **CSS-style**
+stabilizer generators:
+
+- Z-type single-qubit operators: `I` or `Z`
+- X-type single-qubit operators: `I` or `X`
+
+and their n-qubit liftings, plus “typed element” invariants for `NQubitPauliGroupElement n`
+that are stable under subgroup generation (`Subgroup.closure`).
+
+These lemmas are intended to make proofs for Shor/Steane/surface codes modular: you prove
+your generators are Z-type or X-type (and phase-0), and then closure induction gives the
+same property for the entire generated subgroup.
+-/
+
+namespace PauliOperator
+
+/-- Z-type single-qubit Pauli: `I` or `Z`. -/
+def IsZType (p : PauliOperator) : Prop :=
+  p = PauliOperator.I ∨ p = PauliOperator.Z
+
+/-- X-type single-qubit Pauli: `I` or `X`. -/
+def IsXType (p : PauliOperator) : Prop :=
+  p = PauliOperator.I ∨ p = PauliOperator.X
+
+lemma IsZType_I : IsZType PauliOperator.I := Or.inl rfl
+lemma IsZType_Z : IsZType PauliOperator.Z := Or.inr rfl
+
+lemma IsXType_I : IsXType PauliOperator.I := Or.inl rfl
+lemma IsXType_X : IsXType PauliOperator.X := Or.inr rfl
+
+/-!
+## Closure of types under single-qubit multiplication (`mulOp`)
+-/
+
+lemma mulOp_phasePower_zero_of_IsZType {p q : PauliOperator}
+    (hp : IsZType p) (hq : IsZType q) :
+    (p.mulOp q).phasePower = 0 := by
+  rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [PauliOperator.mulOp]
+
+lemma mulOp_operator_IsZType_of_IsZType {p q : PauliOperator}
+    (hp : IsZType p) (hq : IsZType q) :
+    IsZType (p.mulOp q).operator := by
+  rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [IsZType, PauliOperator.mulOp]
+
+lemma mulOp_phasePower_zero_of_IsXType {p q : PauliOperator}
+    (hp : IsXType p) (hq : IsXType q) :
+    (p.mulOp q).phasePower = 0 := by
+  rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [PauliOperator.mulOp]
+
+lemma mulOp_operator_IsXType_of_IsXType {p q : PauliOperator}
+    (hp : IsXType p) (hq : IsXType q) :
+    IsXType (p.mulOp q).operator := by
+  rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [IsXType, PauliOperator.mulOp]
+
+/-!
+## Cross-type fact: Z-type times X-type is `I` iff both are `I`
+-/
+
+lemma mulOp_operator_eq_I_iff_of_types {p q : PauliOperator}
+    (hp : IsZType p) (hq : IsXType q) :
+    (p.mulOp q).operator = PauliOperator.I ↔ p = PauliOperator.I ∧ q = PauliOperator.I := by
+  rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [PauliOperator.mulOp]
+
+end PauliOperator
+
+namespace NQubitPauliOperator
+
+/-- Z-type n-qubit Pauli operator: every component is `I` or `Z`. -/
+def IsZType {n : ℕ} (op : NQubitPauliOperator n) : Prop :=
+  ∀ i, PauliOperator.IsZType (op i)
+
+/-- X-type n-qubit Pauli operator: every component is `I` or `X`. -/
+def IsXType {n : ℕ} (op : NQubitPauliOperator n) : Prop :=
+  ∀ i, PauliOperator.IsXType (op i)
+
+lemma IsZType_identity {n : ℕ} : IsZType (NQubitPauliOperator.identity n) := by
+  intro _; exact PauliOperator.IsZType_I
+
+lemma IsXType_identity {n : ℕ} : IsXType (NQubitPauliOperator.identity n) := by
+  intro _; exact PauliOperator.IsXType_I
+
+/-!
+## Cross-type fact at n qubits
+-/
+
+lemma mulOp_operators_eq_identity_iff_of_types {n : ℕ} {p q : NQubitPauliOperator n}
+    (hp : IsZType p) (hq : IsXType q) :
+    (NQubitPauliGroupElement.mulOp p q).operators = NQubitPauliOperator.identity n ↔
+      p = NQubitPauliOperator.identity n ∧ q = NQubitPauliOperator.identity n := by
+  constructor
+  · intro h
+    have hcomp : ∀ i : Fin n, p i = PauliOperator.I ∧ q i = PauliOperator.I := by
+      intro i
+      -- Look at component `i` of the operators equality.
+      have hi :
+          ((p i).mulOp (q i)).operator = PauliOperator.I := by
+        have := congrArg (fun op => op i) h
+        -- unfold operators of `mulOp`
+        simpa [NQubitPauliGroupElement.mulOp] using this
+      exact (PauliOperator.mulOp_operator_eq_I_iff_of_types (hp i) (hq i)).1 hi
+    refine ⟨?_, ?_⟩
+    · ext i; simpa using (hcomp i).1
+    · ext i; simpa using (hcomp i).2
+  · rintro ⟨rfl, rfl⟩
+    ext i
+    simp [NQubitPauliGroupElement.mulOp, NQubitPauliOperator.identity, PauliOperator.mulOp]
+
+end NQubitPauliOperator
+
+namespace NQubitPauliGroupElement
+
+/-!
+## Typed elements (phase-0 + typed operators)
+-/
+
+/-- Z-type group element: phase 0 and Z-type operator tensor. -/
+def IsZTypeElement {n : ℕ} (g : NQubitPauliGroupElement n) : Prop :=
+  g.phasePower = 0 ∧ NQubitPauliOperator.IsZType g.operators
+
+/-- X-type group element: phase 0 and X-type operator tensor. -/
+def IsXTypeElement {n : ℕ} (g : NQubitPauliGroupElement n) : Prop :=
+  g.phasePower = 0 ∧ NQubitPauliOperator.IsXType g.operators
+
+/-!
+## Operator-only multiplication preserves Z/X type and contributes zero phase
+-/
+
+lemma mulOp_phasePower_zero_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
+    (hp : NQubitPauliOperator.IsZType p) (hq : NQubitPauliOperator.IsZType q) :
+    (NQubitPauliGroupElement.mulOp p q).phasePower = 0 := by
+  classical
+  -- Unfold `mulOp`: the phase is a sum of per-qubit phase contributions.
+  simp [NQubitPauliGroupElement.mulOp, PauliOperator.mulOp_phasePower_zero_of_IsZType (hp _) (hq _),
+    Finset.sum_eq_zero]
+
+lemma mulOp_operators_IsZType_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
+    (hp : NQubitPauliOperator.IsZType p) (hq : NQubitPauliOperator.IsZType q) :
+    NQubitPauliOperator.IsZType (NQubitPauliGroupElement.mulOp p q).operators := by
+  intro i
+  -- Unfold the operator part of `mulOp` and use single-qubit closure.
+  simp [NQubitPauliGroupElement.mulOp,
+    PauliOperator.mulOp_operator_IsZType_of_IsZType (hp i) (hq i)]
+
+lemma mulOp_phasePower_zero_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
+    (hp : NQubitPauliOperator.IsXType p) (hq : NQubitPauliOperator.IsXType q) :
+    (NQubitPauliGroupElement.mulOp p q).phasePower = 0 := by
+  classical
+  simp [NQubitPauliGroupElement.mulOp, PauliOperator.mulOp_phasePower_zero_of_IsXType (hp _) (hq _),
+    Finset.sum_eq_zero]
+
+lemma mulOp_operators_IsXType_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
+    (hp : NQubitPauliOperator.IsXType p) (hq : NQubitPauliOperator.IsXType q) :
+    NQubitPauliOperator.IsXType (NQubitPauliGroupElement.mulOp p q).operators := by
+  intro i
+  simp [NQubitPauliGroupElement.mulOp,
+    PauliOperator.mulOp_operator_IsXType_of_IsXType (hp i) (hq i)]
+
+/-!
+## Closure of typed elements under group operations
+-/
+
+lemma IsZTypeElement_one {n : ℕ} : IsZTypeElement (1 : NQubitPauliGroupElement n) := by
+  constructor
+  · simp
+  · simpa using (NQubitPauliOperator.IsZType_identity (n := n))
+
+lemma IsXTypeElement_one {n : ℕ} : IsXTypeElement (1 : NQubitPauliGroupElement n) := by
+  constructor
+  · simp
+  · simpa using (NQubitPauliOperator.IsXType_identity (n := n))
+
+lemma IsZTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
+    (hg : IsZTypeElement g) (hh : IsZTypeElement h) :
+    IsZTypeElement (g * h) := by
+  constructor
+  · -- phasePower
+    have hmulOp : (NQubitPauliGroupElement.mulOp g.operators h.operators).phasePower = 0 :=
+      mulOp_phasePower_zero_of_IsZType hg.2 hh.2
+    -- Expand multiplication and simplify.
+    simp [NQubitPauliGroupElement.mul, hg.1, hh.1, hmulOp]
+  · -- operator tensor
+    simpa [NQubitPauliGroupElement.mul] using
+      (mulOp_operators_IsZType_of_IsZType (p := g.operators) (q := h.operators) hg.2 hh.2)
+
+lemma IsXTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
+    (hg : IsXTypeElement g) (hh : IsXTypeElement h) :
+    IsXTypeElement (g * h) := by
+  constructor
+  · have hmulOp : (NQubitPauliGroupElement.mulOp g.operators h.operators).phasePower = 0 :=
+      mulOp_phasePower_zero_of_IsXType hg.2 hh.2
+    simp [NQubitPauliGroupElement.mul, hg.1, hh.1, hmulOp]
+  · simpa [NQubitPauliGroupElement.mul] using
+      (mulOp_operators_IsXType_of_IsXType (p := g.operators) (q := h.operators) hg.2 hh.2)
+
+lemma IsZTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
+    (hg : IsZTypeElement g) :
+    IsZTypeElement (g⁻¹) := by
+  constructor
+  · simp [NQubitPauliGroupElement.inv, hg.1]
+  · simpa [NQubitPauliGroupElement.inv] using hg.2
+
+lemma IsXTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
+    (hg : IsXTypeElement g) :
+    IsXTypeElement (g⁻¹) := by
+  constructor
+  · simp [NQubitPauliGroupElement.inv, hg.1]
+  · simpa [NQubitPauliGroupElement.inv] using hg.2
+
+/-!
+## Closure induction: generators ⇒ closure
+-/
+
+theorem IsZTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElement n)}
+    (hS : ∀ g, g ∈ S → IsZTypeElement g) :
+    ∀ g, g ∈ Subgroup.closure S → IsZTypeElement g := by
+  intro g hg
+  refine Subgroup.closure_induction
+    (p := fun g (_ : g ∈ Subgroup.closure S) => IsZTypeElement g)
+    (fun x hx => hS x hx)
+    (by simpa using (IsZTypeElement_one (n := n)))
+    (fun x y _ _ hx hy => IsZTypeElement_mul hx hy)
+    (fun x _ hx => IsZTypeElement_inv hx)
+    hg
+
+theorem IsXTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElement n)}
+    (hS : ∀ g, g ∈ S → IsXTypeElement g) :
+    ∀ g, g ∈ Subgroup.closure S → IsXTypeElement g := by
+  intro g hg
+  refine Subgroup.closure_induction
+    (p := fun g (_ : g ∈ Subgroup.closure S) => IsXTypeElement g)
+    (fun x hx => hS x hx)
+    (by simpa using (IsXTypeElement_one (n := n)))
+    (fun x y _ _ hx hy => IsXTypeElement_mul hx hy)
+    (fun x _ hx => IsXTypeElement_inv hx)
+    hg
+
+/-!
+## Identity-operators criterion for a Z*X product
+
+This lemma is the algebraic core used to rule out `negIdentity` in CSS-generated stabilizer groups.
+-/
+
+lemma z_mul_x_eq_one_of_operators_eq_identity {n : ℕ}
+    (z x : NQubitPauliGroupElement n)
+    (hz : IsZTypeElement z) (hx : IsXTypeElement x)
+    (h_op : (z * x).operators = NQubitPauliOperator.identity n) :
+    z * x = 1 := by
+  -- Reduce to an operator-only statement and apply the n-qubit cross-type lemma.
+  have h_op' :
+      (NQubitPauliGroupElement.mulOp z.operators x.operators).operators =
+        NQubitPauliOperator.identity n := by
+    simpa [NQubitPauliGroupElement.mul] using h_op
+  have h_id_ops :
+      z.operators = NQubitPauliOperator.identity n ∧
+        x.operators = NQubitPauliOperator.identity n := by
+    simpa using
+      (NQubitPauliOperator.mulOp_operators_eq_identity_iff_of_types
+            (p := z.operators) (q := x.operators) hz.2 hx.2).1 h_op'
+  have hz1 : z = 1 := by
+    apply NQubitPauliGroupElement.ext z 1
+    · simp [hz.1]
+    · simp [h_id_ops.1]
+  have hx1 : x = 1 := by
+    apply NQubitPauliGroupElement.ext x 1
+    · simp [hx.1]
+    · simp [h_id_ops.2]
+  -- Avoid rewriting `(*)` into the definitional `mul` via `mul_eq`.
+  simp [hz1, hx1, -NQubitPauliGroupElement.mul_eq]
+
+end NQubitPauliGroupElement
+
+end Quantum
+

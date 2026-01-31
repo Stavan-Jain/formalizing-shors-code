@@ -8,11 +8,11 @@ Along the way, it develops **definitions and lemmas** for reasoning about qubits
 
 The repository is structured into modules that gradually build up to the formalization of quantum error correction. Each module is written in Lean 4 and relies on `mathlib` for foundational mathematical structures.
 
-The main “entrypoint” is the umbrella module `ShorsCode.lean`, which re-exports:
+The main “entrypoint” is the umbrella module `QEC.lean`, which re-exports:
 
-- `ShorsCode.Foundations.Foundations`
-- `ShorsCode.RepetitionCode.RepetitionCode`
-- `ShorsCode.Stabilizer.Stabilizer`
+- `QEC.Foundations.Foundations`
+- `QEC.RepetitionCode.RepetitionCode`
+- `QEC.Stabilizer.Stabilizer`
 
 ### Features
 
@@ -29,44 +29,44 @@ The main “entrypoint” is the umbrella module `ShorsCode.lean`, which re-expo
 
 | Path | Description |
 |------|-------------|
-| `ShorsCode.lean` | Umbrella module for the whole project (imports foundations, repetition code, stabilizer formalism). |
-| `ShorsCode/Foundations/Foundations.lean` | Re-exports the foundational quantum computing development. |
-| `ShorsCode/RepetitionCode/RepetitionCode.lean` | Re-exports the repetition code development. |
-| `ShorsCode/Stabilizer/Stabilizer.lean` | Re-exports the stabilizer formalism development. |
+| `QEC.lean` | Umbrella module for the whole project (imports foundations, repetition code, stabilizer formalism). |
+| `QEC/Foundations/Foundations.lean` | Re-exports the foundational quantum computing development. |
+| `QEC/RepetitionCode/RepetitionCode.lean` | Re-exports the repetition code development. |
+| `QEC/Stabilizer/Stabilizer.lean` | Re-exports the stabilizer formalism development. |
 
 ### Foundations
 
 | Path | Description |
 |------|-------------|
-| `ShorsCode/Foundations/Basic.lean` | Core definitions for qubits, quantum states (`QuantumState`), vectors (`Vector`), norms, and basis states (`ket0`, `ket1`, `ket000`, `ket111`). Also includes generic \(n\)-qubit basis/state types (`NQubitBasis`, `NQubitState`). |
-| `ShorsCode/Foundations/Gates.lean` | Quantum gates as unitary matrices, common 1-qubit gates (X, Y, Z, H), controlled gates (`controllize`, `CNOT`), and helper tactics (`matrix_expand`, `vec_expand`, `vec_expand_simp`). |
-| `ShorsCode/Foundations/Tensor.lean` | Tensor products of gates/states (`⊗ᵍ`, `⊗ₛ`) and utilities for composing multi-qubit operations. |
+| `QEC/Foundations/Basic.lean` | Core definitions for qubits, quantum states (`QuantumState`), vectors (`Vector`), norms, and basis states (`ket0`, `ket1`, `ket000`, `ket111`). Also includes generic \(n\)-qubit basis/state types (`NQubitBasis`, `NQubitState`). |
+| `QEC/Foundations/Gates.lean` | Quantum gates as unitary matrices, common 1-qubit gates (X, Y, Z, H), controlled gates (`controllize`, `CNOT`), and helper tactics (`matrix_expand`, `vec_expand`, `vec_expand_simp`). |
+| `QEC/Foundations/Tensor.lean` | Tensor products of gates/states (`⊗ᵍ`, `⊗ₛ`) and utilities for composing multi-qubit operations. |
 
 ### Repetition Code
 
 | Path | Description |
 |------|-------------|
-| `ShorsCode/RepetitionCode/EncodeDecode.lean` | Semantic encode/decode maps between 1-qubit vectors/states and the 3-qubit repetition-code subspace, with proofs of norm preservation. |
-| `ShorsCode/RepetitionCode/LogicalX.lean` | Implementation and verification of logical X operations on encoded qubits. |
-| `ShorsCode/RepetitionCode/Recovery.lean` | Recovery operations using majority vote decoding, with proofs of correctness for error correction. |
+| `QEC/RepetitionCode/EncodeDecode.lean` | Semantic encode/decode maps between 1-qubit vectors/states and the 3-qubit repetition-code subspace, with proofs of norm preservation. |
+| `QEC/RepetitionCode/LogicalX.lean` | Implementation and verification of logical X operations on encoded qubits. |
+| `QEC/RepetitionCode/Recovery.lean` | Recovery operations using majority vote decoding, with proofs of correctness for error correction. |
 
 ### Stabilizer Formalism
 
 | Path | Description |
 |------|-------------|
-| `ShorsCode/Stabilizer/PauliGroupSingle.lean` | Barrel import for the **single-qubit** Pauli group development (`PauliGroupSingle/`). |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Core.lean` | Core single-qubit Pauli definitions. |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Operator.lean` | Single-qubit Pauli operators. |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Phase.lean` | Global phase bookkeeping for Pauli group elements. |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Element.lean` | Single-qubit Pauli group elements and basic lemmas. |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Representation.lean` | Matrix/representation layer for the single-qubit Pauli group. |
-| `ShorsCode/Stabilizer/PauliGroupSingle/Commutation.lean` | Commutation lemmas for the single-qubit Pauli group. |
-| `ShorsCode/Stabilizer/PauliGroup.lean` | Barrel import for the **\(n\)-qubit** Pauli group development (`PauliGroup/`). |
-| `ShorsCode/Stabilizer/PauliGroup/NQubitOperator.lean` | \(n\)-qubit Pauli operators (per-qubit operator assignments). |
-| `ShorsCode/Stabilizer/PauliGroup/NQubitElement.lean` | \(n\)-qubit Pauli group elements (phase + operator). |
-| `ShorsCode/Stabilizer/PauliGroup/Commutation.lean` | Commutation lemmas for \(n\)-qubit Paulis (componentwise commutation, etc.). |
-| `ShorsCode/Stabilizer/PauliGroup/Representation.lean` | Matrix representation for \(n\)-qubit Pauli group elements. |
-| `ShorsCode/Stabilizer/StabilizerGroup.lean` | Stabilizer groups (abelian subgroups of the \(n\)-qubit Pauli group excluding \(-I\)) and codespace definitions. |
+| `QEC/Stabilizer/PauliGroupSingle.lean` | Barrel import for the **single-qubit** Pauli group development (`PauliGroupSingle/`). |
+| `QEC/Stabilizer/PauliGroupSingle/Core.lean` | Core single-qubit Pauli definitions. |
+| `QEC/Stabilizer/PauliGroupSingle/Operator.lean` | Single-qubit Pauli operators. |
+| `QEC/Stabilizer/PauliGroupSingle/Phase.lean` | Global phase bookkeeping for Pauli group elements. |
+| `QEC/Stabilizer/PauliGroupSingle/Element.lean` | Single-qubit Pauli group elements and basic lemmas. |
+| `QEC/Stabilizer/PauliGroupSingle/Representation.lean` | Matrix/representation layer for the single-qubit Pauli group. |
+| `QEC/Stabilizer/PauliGroupSingle/Commutation.lean` | Commutation lemmas for the single-qubit Pauli group. |
+| `QEC/Stabilizer/PauliGroup.lean` | Barrel import for the **\(n\)-qubit** Pauli group development (`PauliGroup/`). |
+| `QEC/Stabilizer/PauliGroup/NQubitOperator.lean` | \(n\)-qubit Pauli operators (per-qubit operator assignments). |
+| `QEC/Stabilizer/PauliGroup/NQubitElement.lean` | \(n\)-qubit Pauli group elements (phase + operator). |
+| `QEC/Stabilizer/PauliGroup/Commutation.lean` | Commutation lemmas for \(n\)-qubit Paulis (componentwise commutation, etc.). |
+| `QEC/Stabilizer/PauliGroup/Representation.lean` | Matrix representation for \(n\)-qubit Pauli group elements. |
+| `QEC/Stabilizer/Core/StabilizerGroup.lean` | Stabilizer groups (abelian subgroups of the \(n\)-qubit Pauli group excluding \(-I\)) and codespace definitions. |
 
 ## Getting Started
 
@@ -91,7 +91,7 @@ The main “entrypoint” is the umbrella module `ShorsCode.lean`, which re-expo
 
 3. **Verify everything compiles**:
    ```bash
-   lake build ShorsCode
+   lake build QEC
    ```
 
 ### Working with the Code
@@ -109,7 +109,7 @@ The main “entrypoint” is the umbrella module `ShorsCode.lean`, which re-expo
 
 Contributions are welcome! If you add new modules or definitions, please:
 
-1. **Expose modules** through `lakefile.toml` or the umbrella module (`ShorsCode.lean`)
+1. **Expose modules** through `lakefile.toml` or the umbrella module (`QEC.lean`)
 2. **Update this README**'s **Project Structure** section
 3. **Follow Lean's [style guide](https://leanprover-community.github.io/style-guide.html)** and document key definitions with docstrings
 4. **Add proofs** for important properties and lemmas
