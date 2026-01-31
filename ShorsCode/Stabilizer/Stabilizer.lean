@@ -1,3 +1,10 @@
 import ShorsCode.Stabilizer.PauliGroupSingle
 import ShorsCode.Stabilizer.PauliGroup
 import ShorsCode.Stabilizer.StabilizerGroup
+import ShorsCode.Stabilizer.SubgroupLemmas
+import ShorsCode.Stabilizer.RepetitionCode3
+import ShorsCode.Stabilizer.RepetitionCodeN
+import ShorsCode.Stabilizer.CSS
+import ShorsCode.Stabilizer.CSSNoNegI
+import ShorsCode.Stabilizer.Shor9
+import ShorsCode.Stabilizer.Steane7
