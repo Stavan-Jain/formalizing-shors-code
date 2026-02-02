@@ -32,31 +32,41 @@ def IsZType (p : PauliOperator) : Prop :=
 def IsXType (p : PauliOperator) : Prop :=
   p = PauliOperator.I ∨ p = PauliOperator.X
 
+/-- The identity `I` is Z-type. -/
 lemma IsZType_I : IsZType PauliOperator.I := Or.inl rfl
+
+/-- The Pauli `Z` is Z-type. -/
 lemma IsZType_Z : IsZType PauliOperator.Z := Or.inr rfl
 
+/-- The identity `I` is X-type. -/
 lemma IsXType_I : IsXType PauliOperator.I := Or.inl rfl
+
+/-- The Pauli `X` is X-type. -/
 lemma IsXType_X : IsXType PauliOperator.X := Or.inr rfl
 
 /-!
 ## Closure of types under single-qubit multiplication (`mulOp`)
 -/
 
+/-- Multiplying two Z-type single-qubit Paulis contributes no phase in `mulOp`. -/
 lemma mulOp_phasePower_zero_of_IsZType {p q : PauliOperator}
     (hp : IsZType p) (hq : IsZType q) :
     (p.mulOp q).phasePower = 0 := by
   rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [PauliOperator.mulOp]
 
+/-- Multiplying two Z-type single-qubit Paulis stays Z-type at the operator level. -/
 lemma mulOp_operator_IsZType_of_IsZType {p q : PauliOperator}
     (hp : IsZType p) (hq : IsZType q) :
     IsZType (p.mulOp q).operator := by
   rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [IsZType, PauliOperator.mulOp]
 
+/-- Multiplying two X-type single-qubit Paulis contributes no phase in `mulOp`. -/
 lemma mulOp_phasePower_zero_of_IsXType {p q : PauliOperator}
     (hp : IsXType p) (hq : IsXType q) :
     (p.mulOp q).phasePower = 0 := by
   rcases hp with rfl | rfl <;> rcases hq with rfl | rfl <;> simp [PauliOperator.mulOp]
 
+/-- Multiplying two X-type single-qubit Paulis stays X-type at the operator level. -/
 lemma mulOp_operator_IsXType_of_IsXType {p q : PauliOperator}
     (hp : IsXType p) (hq : IsXType q) :
     IsXType (p.mulOp q).operator := by
@@ -66,6 +76,8 @@ lemma mulOp_operator_IsXType_of_IsXType {p q : PauliOperator}
 ## Cross-type fact: Z-type times X-type is `I` iff both are `I`
 -/
 
+/-- If `p` is Z-type and `q` is X-type, then `(p.mulOp q)` has operator `I`
+iff `p = I` and `q = I` (i.e. no nontrivial cancellation across Z/X types). -/
 lemma mulOp_operator_eq_I_iff_of_types {p q : PauliOperator}
     (hp : IsZType p) (hq : IsXType q) :
     (p.mulOp q).operator = PauliOperator.I ↔ p = PauliOperator.I ∧ q = PauliOperator.I := by
@@ -83,9 +95,11 @@ def IsZType {n : ℕ} (op : NQubitPauliOperator n) : Prop :=
 def IsXType {n : ℕ} (op : NQubitPauliOperator n) : Prop :=
   ∀ i, PauliOperator.IsXType (op i)
 
+/-- The n-qubit identity operator is Z-type (all components are `I`). -/
 lemma IsZType_identity {n : ℕ} : IsZType (NQubitPauliOperator.identity n) := by
   intro _; exact PauliOperator.IsZType_I
 
+/-- The n-qubit identity operator is X-type (all components are `I`). -/
 lemma IsXType_identity {n : ℕ} : IsXType (NQubitPauliOperator.identity n) := by
   intro _; exact PauliOperator.IsXType_I
 
@@ -93,6 +107,8 @@ lemma IsXType_identity {n : ℕ} : IsXType (NQubitPauliOperator.identity n) := b
 ## Cross-type fact at n qubits
 -/
 
+/-- If `p` is Z-type and `q` is X-type, then the operator part of `mulOp p q` is the
+n-qubit identity iff both `p` and `q` are the n-qubit identity operators. -/
 lemma mulOp_operators_eq_identity_iff_of_types {n : ℕ} {p q : NQubitPauliOperator n}
     (hp : IsZType p) (hq : IsXType q) :
     (NQubitPauliGroupElement.mulOp p q).operators = NQubitPauliOperator.identity n ↔
@@ -135,6 +151,7 @@ def IsXTypeElement {n : ℕ} (g : NQubitPauliGroupElement n) : Prop :=
 ## Operator-only multiplication preserves Z/X type and contributes zero phase
 -/
 
+/-- For Z-type n-qubit operators `p q`, the `mulOp p q` phase contribution is zero. -/
 lemma mulOp_phasePower_zero_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
     (hp : NQubitPauliOperator.IsZType p) (hq : NQubitPauliOperator.IsZType q) :
     (NQubitPauliGroupElement.mulOp p q).phasePower = 0 := by
@@ -143,6 +160,7 @@ lemma mulOp_phasePower_zero_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
   simp [NQubitPauliGroupElement.mulOp, PauliOperator.mulOp_phasePower_zero_of_IsZType (hp _) (hq _),
     Finset.sum_eq_zero]
 
+/-- For Z-type n-qubit operators `p q`, the operator part of `mulOp p q` is Z-type. -/
 lemma mulOp_operators_IsZType_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
     (hp : NQubitPauliOperator.IsZType p) (hq : NQubitPauliOperator.IsZType q) :
     NQubitPauliOperator.IsZType (NQubitPauliGroupElement.mulOp p q).operators := by
@@ -151,6 +169,7 @@ lemma mulOp_operators_IsZType_of_IsZType {n : ℕ} {p q : NQubitPauliOperator n}
   simp [NQubitPauliGroupElement.mulOp,
     PauliOperator.mulOp_operator_IsZType_of_IsZType (hp i) (hq i)]
 
+/-- For X-type n-qubit operators `p q`, the `mulOp p q` phase contribution is zero. -/
 lemma mulOp_phasePower_zero_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
     (hp : NQubitPauliOperator.IsXType p) (hq : NQubitPauliOperator.IsXType q) :
     (NQubitPauliGroupElement.mulOp p q).phasePower = 0 := by
@@ -158,6 +177,7 @@ lemma mulOp_phasePower_zero_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
   simp [NQubitPauliGroupElement.mulOp, PauliOperator.mulOp_phasePower_zero_of_IsXType (hp _) (hq _),
     Finset.sum_eq_zero]
 
+/-- For X-type n-qubit operators `p q`, the operator part of `mulOp p q` is X-type. -/
 lemma mulOp_operators_IsXType_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
     (hp : NQubitPauliOperator.IsXType p) (hq : NQubitPauliOperator.IsXType q) :
     NQubitPauliOperator.IsXType (NQubitPauliGroupElement.mulOp p q).operators := by
@@ -169,16 +189,19 @@ lemma mulOp_operators_IsXType_of_IsXType {n : ℕ} {p q : NQubitPauliOperator n}
 ## Closure of typed elements under group operations
 -/
 
+/-- The group identity element is Z-type (phase 0, operator identity). -/
 lemma IsZTypeElement_one {n : ℕ} : IsZTypeElement (1 : NQubitPauliGroupElement n) := by
   constructor
   · simp
   · simpa using (NQubitPauliOperator.IsZType_identity (n := n))
 
+/-- The group identity element is X-type (phase 0, operator identity). -/
 lemma IsXTypeElement_one {n : ℕ} : IsXTypeElement (1 : NQubitPauliGroupElement n) := by
   constructor
   · simp
   · simpa using (NQubitPauliOperator.IsXType_identity (n := n))
 
+/-- Z-type elements are closed under group multiplication. -/
 lemma IsZTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
     (hg : IsZTypeElement g) (hh : IsZTypeElement h) :
     IsZTypeElement (g * h) := by
@@ -192,6 +215,7 @@ lemma IsZTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
     simpa [NQubitPauliGroupElement.mul] using
       (mulOp_operators_IsZType_of_IsZType (p := g.operators) (q := h.operators) hg.2 hh.2)
 
+/-- X-type elements are closed under group multiplication. -/
 lemma IsXTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
     (hg : IsXTypeElement g) (hh : IsXTypeElement h) :
     IsXTypeElement (g * h) := by
@@ -202,6 +226,7 @@ lemma IsXTypeElement_mul {n : ℕ} {g h : NQubitPauliGroupElement n}
   · simpa [NQubitPauliGroupElement.mul] using
       (mulOp_operators_IsXType_of_IsXType (p := g.operators) (q := h.operators) hg.2 hh.2)
 
+/-- Z-type elements are closed under group inversion. -/
 lemma IsZTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
     (hg : IsZTypeElement g) :
     IsZTypeElement (g⁻¹) := by
@@ -209,6 +234,7 @@ lemma IsZTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
   · simp [NQubitPauliGroupElement.inv, hg.1]
   · simpa [NQubitPauliGroupElement.inv] using hg.2
 
+/-- X-type elements are closed under group inversion. -/
 lemma IsXTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
     (hg : IsXTypeElement g) :
     IsXTypeElement (g⁻¹) := by
@@ -220,6 +246,7 @@ lemma IsXTypeElement_inv {n : ℕ} {g : NQubitPauliGroupElement n}
 ## Closure induction: generators ⇒ closure
 -/
 
+/-- If every generator in `S` is Z-type, then every element of `Subgroup.closure S` is Z-type. -/
 theorem IsZTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElement n)}
     (hS : ∀ g, g ∈ S → IsZTypeElement g) :
     ∀ g, g ∈ Subgroup.closure S → IsZTypeElement g := by
@@ -232,6 +259,7 @@ theorem IsZTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElemen
     (fun x _ hx => IsZTypeElement_inv hx)
     hg
 
+/-- If every generator in `S` is X-type, then every element of `Subgroup.closure S` is X-type. -/
 theorem IsXTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElement n)}
     (hS : ∀ g, g ∈ S → IsXTypeElement g) :
     ∀ g, g ∈ Subgroup.closure S → IsXTypeElement g := by
@@ -250,6 +278,11 @@ theorem IsXTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElemen
 This lemma is the algebraic core used to rule out `negIdentity` in CSS-generated stabilizer groups.
 -/
 
+/-- If `z` is Z-type and `x` is X-type and their product has identity operator tensor,
+then the whole product is the group identity.
+
+This is the key “no `-I`” step for CSS stabilizer constructions: a Z-part times an X-part
+can only have all-`I` operator tensor in the trivial case. -/
 lemma z_mul_x_eq_one_of_operators_eq_identity {n : ℕ}
     (z x : NQubitPauliGroupElement n)
     (hz : IsZTypeElement z) (hx : IsXTypeElement x)
@@ -280,4 +313,3 @@ lemma z_mul_x_eq_one_of_operators_eq_identity {n : ℕ}
 end NQubitPauliGroupElement
 
 end Quantum
-
