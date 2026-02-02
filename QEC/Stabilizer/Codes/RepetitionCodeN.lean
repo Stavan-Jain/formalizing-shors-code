@@ -119,7 +119,7 @@ theorem negIdentity_not_mem (n : ℕ) :
     intro z hz x hx
     simp [XGenerators] at hx
   simpa [subgroup, generators] using
-    (CSS.negIdentity_not_mem_closure_union (n := n + 2) (ZGenerators n) (XGenerators n)
+    (CSS.negIdentity_not_mem_closure_union (ZGenerators n) (XGenerators n)
       (ZGenerators_are_ZType n) hX hZX)
 
 /-!
@@ -138,4 +138,3 @@ end RepetitionCodeN
 end StabilizerGroup
 
 end Quantum
-
