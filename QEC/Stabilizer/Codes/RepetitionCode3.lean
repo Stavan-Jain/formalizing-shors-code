@@ -167,7 +167,9 @@ private lemma subgroup_elems (g : NQubitPauliGroupElement 3) (hg : g ∈ subgrou
     rcases hg' with rfl | rfl
     · right; left; rfl
     · right; right; left; rfl
-  · sorry
+  · rintro ( rfl | rfl | rfl | rfl ) ( rfl | rfl | rfl | rfl ) <;> simp +decide [ * ];
+    all_goals simp_all +decide [ eq_comm, NQubitPauliGroupElement.ext_iff,
+    NQubitPauliOperator.ext_iff ]
   · rintro hx'
     rcases hx' with rfl | rfl | rfl | rfl
     · left; rfl
@@ -181,7 +183,19 @@ private lemma subgroup_elems (g : NQubitPauliGroupElement 3) (hg : g ∈ subgrou
       rw [h2, h3, Z1Z2_commutes_Z2Z3]
 
 theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup := by
-  sorry
+  -- By definition of subgroup, if logicalX were in the subgroup, it would have
+  -- to be one of the elements 1, Z1Z2, Z2Z3, or Z1Z2*Z2Z3.
+  have h_cases : ∀ g ∈ subgroup, g = 1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
+    -- Apply the lemma that states any element in the subgroup is one of the four elements.
+    apply subgroup_elems;
+  -- By checking each element in the subgroup, we can see that logicalX is not equal to any of them.
+  have h_not_in_subgroup : logicalX ≠ 1 ∧ logicalX ≠ Z1Z2 ∧ logicalX ≠ Z2Z3 ∧
+  logicalX ≠ Z1Z2 * Z2Z3 := by
+    simp +decide [ NQubitPauliGroupElement.ext_iff, NQubitPauliOperator.ext_iff ];
+  intros h_mem
+  have h_eq : logicalX = 1 ∨ logicalX = Z1Z2 ∨ logicalX = Z2Z3 ∨ logicalX =
+  Z1Z2 * Z2Z3 := h_cases logicalX h_mem
+  exact h_not_in_subgroup.left (by tauto)
 
 private lemma logicalZ_commutes_Z1Z2 : logicalZ * Z1Z2 = Z1Z2 * logicalZ := by
   pauli_comm_componentwise [logicalZ, Z1Z2]
@@ -211,7 +225,17 @@ theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := b
     exact mul_right_cancel H
 
 theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup := by
-  sorry
+  have h_subgroup : ∀ g ∈ Quantum.StabilizerGroup.RepetitionCode3.subgroup, g =
+  1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
+    intro g hg
+    apply subgroup_elems g hg;
+  contrapose! h_subgroup;
+  refine ⟨ logicalZ, h_subgroup, ?_, ?_, ?_, ?_ ⟩
+  all_goals simp +decide [ NQubitPauliGroupElement.ext_iff ];
+  · exact fun h => by have := congr_fun h 0; simp +decide at this;
+  · simp +decide [ NQubitPauliOperator.ext_iff ];
+  · simp +decide [ NQubitPauliOperator.ext_iff ];
+  · simp +decide [ NQubitPauliOperator.ext_iff ]
 
 end RepetitionCode3
 end StabilizerGroup
