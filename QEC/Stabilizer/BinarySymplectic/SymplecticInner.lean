@@ -42,6 +42,18 @@ def symplecticInner (op₁ op₂ : NQubitPauliOperator n) : ZMod 2 :=
   (Finset.univ : Finset (Fin n)).sum (fun i =>
     PauliOperator.symplecticProductSingle (op₁ i) (op₂ i))
 
+/-- The symplectic vector of the product operator is the pointwise sum (in ZMod 2)
+  of the two symplectic vectors. -/
+lemma toSymplectic_add (p q : NQubitPauliOperator n) (j : Fin (n + n)) :
+    toSymplectic (NQubitPauliGroupElement.mulOp p q).operators j = toSymplectic 
+    p j + toSymplectic q j := by
+  simp only [toSymplectic, NQubitPauliGroupElement.mulOp]
+  split_ifs with hj
+  · exact congr_arg Prod.fst
+      (PauliOperator.toSymplecticSingle_add (p ⟨j.val, hj⟩) (q ⟨j.val, hj⟩))
+  · exact congr_arg Prod.snd
+      (PauliOperator.toSymplecticSingle_add (p ⟨j.val - n, by omega⟩) (q ⟨j.val - n, by omega⟩))
+
 /-- Two n-qubit Pauli group elements commute iff their symplectic inner product (on the
   operator parts) is 0. The equivalence with the existing `commutes_iff_even_anticommutes`
   is proved later. -/

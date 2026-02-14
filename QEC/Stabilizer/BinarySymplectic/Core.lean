@@ -1,6 +1,7 @@
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic
 import QEC.Stabilizer.PauliGroupSingle
+import QEC.Stabilizer.PauliGroupSingle.Operator
 import QEC.Stabilizer.PauliGroup.NQubitOperator
 
 namespace Quantum
@@ -34,6 +35,16 @@ def toSymplecticSingle (P : PauliOperator) : ZMod 2 × ZMod 2 :=
 lemma toSymplecticSingle_injective : Function.Injective toSymplecticSingle := by
   rintro a b h
   cases a <;> cases b <;> simp at h <;> rfl
+
+/-- The symplectic (x,z) of the product operator is the sum mod 2 of the two (x,z) pairs.
+  (The phase of P.mulOp Q does not affect the operator part.) -/
+lemma toSymplecticSingle_add (P Q : PauliOperator) :
+    ((P.mulOp Q).operator).toSymplecticSingle =
+    (P.toSymplecticSingle.1 + Q.toSymplecticSingle.1, P.toSymplecticSingle.2 +
+    Q.toSymplecticSingle.2) := by
+  cases P <;> cases Q <;> simp [toSymplecticSingle_I, toSymplecticSingle_X,
+    toSymplecticSingle_Y, toSymplecticSingle_Z]
+  all_goals rfl
 
 end PauliOperator
 
