@@ -1,3 +1,4 @@
+import QEC.Stabilizer.BinarySymplectic.SymplecticInner
 import QEC.Stabilizer.PauliGroup.Commutation
 import QEC.Stabilizer.PauliGroup.CommutationTactics
 import QEC.Stabilizer.Core.StabilizerGroup
@@ -104,6 +105,15 @@ def logicalX : NQubitPauliGroupElement 3 :=
 /-- Logical Z: Z on qubit 0 only. -/
 def logicalZ : NQubitPauliGroupElement 3 :=
   ⟨0, (NQubitPauliOperator.identity 3).set 0 PauliOperator.Z⟩
+
+/-- Logical X and logical Z anticommute: X⊗X⊗X and Z⊗I⊗I differ on exactly one qubit (qubit 0). -/
+theorem logicalX_anticommutes_logicalZ : NQubitPauliGroupElement.Anticommute logicalX logicalZ := by
+  rw [NQubitPauliOperator.anticommutes_iff_symplectic_inner_one]
+  unfold NQubitPauliOperator.symplecticInner
+  simp only [logicalX, logicalZ, NQubitPauliOperator.X, NQubitPauliOperator.set,
+    NQubitPauliOperator.identity, PauliOperator.symplecticProductSingle,
+    PauliOperator.toSymplecticSingle_X]
+  decide
 
 private lemma logicalX_commutes_Z1Z2 : logicalX * Z1Z2 = Z1Z2 * logicalX := by
   classical

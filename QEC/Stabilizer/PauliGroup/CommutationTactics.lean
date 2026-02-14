@@ -14,9 +14,14 @@ Two tactics to shorten repetitive commutation proofs in stabilizer code files:
 
 - **`pauli_comm_even_anticommutes`**: for goals `z * x = x * z` when commutation follows
   from "even number of qubits anticommute". Reduces the goal to
-  `Even ((Finset.univ.filter (anticommutesAt ...)).card)`. Prove that by showing the
+  `Even ((Finset.univ.filter (anticommutesAt ...)).card)`. Then prove by showing the
   filter equals a concrete finset (e.g. `have hfilter : (Finset.univ.filter ...) = {0,1} := by
-  ext i; fin_cases i; simp [*]`) then `simp [hfilter]` or `rw [hfilter]; decide`.
+  ext i; fin_cases i; simp [Finset.mem_filter, anticommutesAt, *, logicalX, Z1Z2, ...]`) then
+  `simp [hfilter]` or `rw [hfilter]; decide`.
+
+- **`pauli_anticomm_odd_anticommutes`**: for goals `Anticommute p q` (i.e. `p * q = (-1)*(q * p)`).
+  Reduces the goal to `Odd ((filter ...).card)`. Then show the filter equals a concrete
+  finset of odd size and `simp [hfilter]` or `rw [hfilter]; decide`.
 -/
 
 namespace Quantum.NQubitPauliGroupElement
@@ -52,6 +57,18 @@ macro_rules
   | `(tactic| pauli_comm_even_anticommutes) => `(tactic| (
       classical
       apply (NQubitPauliGroupElement.commutes_iff_even_anticommutes _ _).2
+    ))
+
+/-!
+## Odd-anticommutes anticommutation
+-/
+
+syntax (name := pauli_anticomm_odd_anticommutes) "pauli_anticomm_odd_anticommutes" : tactic
+
+macro_rules
+  | `(tactic| pauli_anticomm_odd_anticommutes) => `(tactic| (
+      classical
+      apply (NQubitPauliGroupElement.anticommutes_iff_odd_anticommutes _ _).2
     ))
 
 end Quantum.NQubitPauliGroupElement

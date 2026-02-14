@@ -72,6 +72,10 @@ lemma toGate_val (p : NQubitPauliGroupElement n) : (toGate p).val = toMatrix p :
 def one (n : ℕ) : NQubitPauliGroupElement n :=
   ⟨0, NQubitPauliOperator.identity n⟩
 
+/-- The central element `-1` of the n-qubit Pauli group: phase -1 with identity operators. -/
+def minusOne (n : ℕ) : NQubitPauliGroupElement n :=
+  ⟨2, NQubitPauliOperator.identity n⟩
+
 /-- Extract the global phase power. -/
 def phase (p : NQubitPauliGroupElement n) : Fin 4 := p.phasePower
 
@@ -91,6 +95,11 @@ def ofOperator (op : NQubitPauliOperator n) : NQubitPauliGroupElement n :=
 -- Simp lemmas for the identity element
 @[simp] lemma one_phasePower (n : ℕ) : (one n).phasePower = 0 := rfl
 @[simp] lemma one_operators (n : ℕ) : (one n).operators = NQubitPauliOperator.identity n := rfl
+
+-- Simp lemmas for minusOne
+@[simp] lemma minusOne_phasePower (n : ℕ) : (minusOne n).phasePower = 2 := rfl
+@[simp] lemma minusOne_operators (n : ℕ) : (minusOne n).operators = 
+NQubitPauliOperator.identity n := rfl
 
 /-- Get the Pauli operator at a specific qubit position. -/
 def getOp (p : NQubitPauliGroupElement n) (i : Fin n) : PauliOperator :=
@@ -157,7 +166,7 @@ noncomputable instance : One (NQubitPauliGroupElement n) := ⟨one n⟩
 (1 : NQubitPauliGroupElement n).operators = NQubitPauliOperator.identity n := rfl
 
 /-- Helper: multiplication with identity operator gives no phase contribution. -/
-private lemma mulOp_identity_right_phase (op : NQubitPauliOperator n) :
+lemma mulOp_identity_right_phase (op : NQubitPauliOperator n) :
   (mulOp op (NQubitPauliOperator.identity n)).phasePower = 0 := by
   unfold mulOp NQubitPauliOperator.identity
   have h : ∀ i, ((op i).mulOp PauliOperator.I).phasePower = 0 := by
@@ -170,7 +179,7 @@ private lemma mulOp_identity_right_phase (op : NQubitPauliOperator n) :
   simp [hsum]
 
 /-- Helper: multiplication with identity operator on the left gives no phase contribution. -/
-private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
+lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
   (mulOp (NQubitPauliOperator.identity n) op).phasePower = 0 := by
   unfold mulOp NQubitPauliOperator.identity
   have h : ∀ i, (PauliOperator.I.mulOp (op i)).phasePower = 0 := by
@@ -183,7 +192,7 @@ private lemma mulOp_identity_left_phase (op : NQubitPauliOperator n) :
   simp [hsum]
 
 /-- Helper: multiplication with identity operator gives same operator. -/
-private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
+lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
   (mulOp op ((one n).operators)).operators = op := by
   unfold mulOp one NQubitPauliOperator.identity
   ext i
@@ -191,7 +200,7 @@ private lemma mulOp_identity_right_op (op : NQubitPauliOperator n) :
   cases op i <;> simp
 
 /-- Helper: multiplication with identity operator on the left gives same operator. -/
-private lemma mulOp_identity_left_op (op : NQubitPauliOperator n) :
+lemma mulOp_identity_left_op (op : NQubitPauliOperator n) :
   (mulOp (NQubitPauliOperator.identity n) op).operators = op := by
   unfold mulOp NQubitPauliOperator.identity
   ext i
