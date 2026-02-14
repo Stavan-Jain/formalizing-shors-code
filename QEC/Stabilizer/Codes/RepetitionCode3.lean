@@ -1,7 +1,10 @@
 import QEC.Stabilizer.PauliGroup.Commutation
+import QEC.Stabilizer.PauliGroup.CommutationTactics
 import QEC.Stabilizer.Core.StabilizerGroup
 import QEC.Stabilizer.Core.SubgroupLemmas
 import QEC.Stabilizer.Core.CSSNoNegI
+import QEC.Stabilizer.Core.Centralizer
+import QEC.Stabilizer.PauliGroup.NQubitOperator
 
 namespace Quantum
 open scoped BigOperators
@@ -23,12 +26,7 @@ def generators : Set (NQubitPauliGroupElement 3) :=
 
 /-- The generators commute (proved componentwise). -/
 lemma Z1Z2_commutes_Z2Z3 : Z1Z2 * Z2Z3 = Z2Z3 * Z1Z2 := by
-  classical
-  -- Use the general componentwise-commutation lemma for n-qubit Pauli elements.
-  apply NQubitPauliGroupElement.commutes_of_componentwise_commutes
-  intro i
-  fin_cases i <;>
-    simp [Z1Z2, Z2Z3, NQubitPauliOperator.set, NQubitPauliOperator.identity]
+  pauli_comm_componentwise [Z1Z2, Z2Z3]
 
 /-- Pairwise commutation for elements of `generators`. -/
 theorem generators_commute :
@@ -95,8 +93,127 @@ noncomputable def stabilizerGroup : StabilizerGroup 3 :=
 , no_neg_identity := by
     simpa using negIdentity_not_mem }
 
+/-!
+## Logical operators
+-/
+
+/-- Logical X: X on all three qubits. -/
+def logicalX : NQubitPauliGroupElement 3 :=
+  ⟨0, NQubitPauliOperator.X 3⟩
+
+/-- Logical Z: Z on qubit 0 only. -/
+def logicalZ : NQubitPauliGroupElement 3 :=
+  ⟨0, (NQubitPauliOperator.identity 3).set 0 PauliOperator.Z⟩
+
+private lemma logicalX_commutes_Z1Z2 : logicalX * Z1Z2 = Z1Z2 * logicalX := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 3) logicalX.operators Z1Z2.operators)) =
+        ({0, 1} : Finset (Fin 3)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalX, Z1Z2,
+        NQubitPauliOperator.X, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  simp [hfilter]
+
+private lemma logicalX_commutes_Z2Z3 : logicalX * Z2Z3 = Z2Z3 * logicalX := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 3) logicalX.operators Z2Z3.operators)) =
+        ({1, 2} : Finset (Fin 3)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalX, Z2Z3,
+        NQubitPauliOperator.X, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  simp [hfilter]
+
+theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := by
+  rw [StabilizerGroup.mem_centralizer_iff]
+  intro h hh
+  refine Subgroup.closure_induction (p := fun g _ => g * logicalX = logicalX * g)
+    (fun g hg => ?_)
+    (by simp only [NQubitPauliGroupElement.one_mul, NQubitPauliGroupElement.mul_one])
+    (fun x y _ _ hx hy => ?_) (fun x _ h => ?_) hh
+  · simp [generators] at hg
+    rcases hg with rfl | rfl
+    · exact logicalX_commutes_Z1Z2.symm
+    · exact logicalX_commutes_Z2Z3.symm
+  · calc (x * y) * logicalX = x * (y * logicalX) := by rw [NQubitPauliGroupElement.mul_assoc]
+    _ = x * (logicalX * y) := by rw [hy]
+    _ = (x * logicalX) * y := by rw [← NQubitPauliGroupElement.mul_assoc]
+    _ = (logicalX * x) * y := by rw [hx]
+    _ = logicalX * (x * y) := by rw [NQubitPauliGroupElement.mul_assoc]
+  · have H : (x⁻¹ * logicalX) * x = (logicalX * x⁻¹) * x := by
+      rw [NQubitPauliGroupElement.mul_assoc, ← h, inv_mul_cancel_left,
+        NQubitPauliGroupElement.mul_assoc, inv_mul_cancel, NQubitPauliGroupElement.mul_one]
+    exact mul_right_cancel H
+
+lemma logicalX_is_XType : NQubitPauliGroupElement.IsXTypeElement logicalX := by
+  constructor
+  · rfl
+  · intro i
+    fin_cases i <;> simp [logicalX, NQubitPauliOperator.X, PauliOperator.IsXType]
+
+/-- The subgroup has exactly four elements: 1, Z1Z2, Z2Z3, Z1Z2*Z2Z3. -/
+private lemma subgroup_elems (g : NQubitPauliGroupElement 3) (hg : g ∈ subgroup) :
+    g = 1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
+  refine Subgroup.closure_induction (p := fun x _ => x = 1 ∨ x = Z1Z2 ∨ x = Z2Z3 ∨ x = Z1Z2 * Z2Z3)
+    (fun g hg' => ?_) (by left; rfl) (fun x y _ _ => ?_) (fun x _ => ?_) hg
+  · simp [generators] at hg'
+    rcases hg' with rfl | rfl
+    · right; left; rfl
+    · right; right; left; rfl
+  · sorry
+  · rintro hx'
+    rcases hx' with rfl | rfl | rfl | rfl
+    · left; rfl
+    · right; left; simp [Z1Z2, NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
+    · right; right; left; simp [Z2Z3, NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
+    · right; right; right; rw [mul_inv_rev]
+      have h2 : (Z2Z3)⁻¹ = Z2Z3 := by simp [Z2Z3,
+      NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
+      have h3 : (Z1Z2)⁻¹ = Z1Z2 := by simp [Z1Z2,
+      NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
+      rw [h2, h3, Z1Z2_commutes_Z2Z3]
+
+theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup := by
+  sorry
+
+private lemma logicalZ_commutes_Z1Z2 : logicalZ * Z1Z2 = Z1Z2 * logicalZ := by
+  pauli_comm_componentwise [logicalZ, Z1Z2]
+
+private lemma logicalZ_commutes_Z2Z3 : logicalZ * Z2Z3 = Z2Z3 * logicalZ := by
+  pauli_comm_componentwise [logicalZ, Z2Z3]
+
+theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := by
+  rw [StabilizerGroup.mem_centralizer_iff]
+  intro h hh
+  refine Subgroup.closure_induction (p := fun g _ => g * logicalZ = logicalZ * g)
+    (fun g hg => ?_)
+    (by simp only [NQubitPauliGroupElement.one_mul, NQubitPauliGroupElement.mul_one])
+    (fun x y _ _ hx hy => ?_) (fun x _ h => ?_) hh
+  · simp [generators] at hg
+    rcases hg with rfl | rfl
+    · exact logicalZ_commutes_Z1Z2.symm
+    · exact logicalZ_commutes_Z2Z3.symm
+  · calc (x * y) * logicalZ = x * (y * logicalZ) := by rw [NQubitPauliGroupElement.mul_assoc]
+    _ = x * (logicalZ * y) := by rw [hy]
+    _ = (x * logicalZ) * y := by rw [← NQubitPauliGroupElement.mul_assoc]
+    _ = (logicalZ * x) * y := by rw [hx]
+    _ = logicalZ * (x * y) := by rw [NQubitPauliGroupElement.mul_assoc]
+  · have H : (x⁻¹ * logicalZ) * x = (logicalZ * x⁻¹) * x := by
+      rw [NQubitPauliGroupElement.mul_assoc, ← h, inv_mul_cancel_left,
+        NQubitPauliGroupElement.mul_assoc, inv_mul_cancel, NQubitPauliGroupElement.mul_one]
+    exact mul_right_cancel H
+
+theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup := by
+  sorry
+
 end RepetitionCode3
 end StabilizerGroup
 
 end Quantum
-
