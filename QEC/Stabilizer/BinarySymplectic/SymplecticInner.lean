@@ -48,7 +48,16 @@ def symplecticInner (op₁ op₂ : NQubitPauliOperator n) : ZMod 2 :=
 theorem commutes_iff_symplectic_inner_zero (p q : NQubitPauliGroupElement n) :
     p * q = q * p ↔ symplecticInner p.operators q.operators = 0 := by
   rw [NQubitPauliGroupElement.commutes_iff_even_anticommutes]
-  sorry  -- symplecticInner = 0 ↔ Even (card of anticommuting qubits)
+  unfold NQubitPauliOperator.symplecticInner;
+  have h_symplecticProductSingle : ∀ P Q : PauliOperator,
+  PauliOperator.symplecticProductSingle P Q =
+  if (P.mulOp Q).phasePower = (Q.mulOp P).phasePower + 2 then 1 else 0 := by
+    rintro ( P | P | P | P ) ( Q | Q | Q | Q ) <;> simp +decide;
+  rw [ Finset.sum_congr rfl fun i _ => h_symplecticProductSingle _ _ ] ;
+  simp [ ZMod ] ;
+  rw [ ← even_iff_two_dvd ];
+  congr! 2;
+  ext; simp [Quantum.NQubitPauliGroupElement.anticommutesAt]
 
 end NQubitPauliOperator
 
