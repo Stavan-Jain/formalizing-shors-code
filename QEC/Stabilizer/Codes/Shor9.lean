@@ -4,6 +4,7 @@ import QEC.Stabilizer.Core.SubgroupLemmas
 import QEC.Stabilizer.Core.CSS
 import QEC.Stabilizer.Core.CSSNoNegI
 import QEC.Stabilizer.PauliGroup.Commutation
+import QEC.Stabilizer.PauliGroup.CommutationTactics
 
 namespace Quantum
 open scoped BigOperators
@@ -108,19 +109,9 @@ We use the parity characterization from `PauliGroup/Commutation.lean` and discha
 finite parity goals by explicitly identifying the anticommute positions (n = 9).
 -/
 
-private lemma commute_by_even_anticommutes
-    (z x : NQubitPauliGroupElement 9)
-    (hEven :
-      (by
-        classical
-        exact Even
-          ((Finset.univ.filter
-                (NQubitPauliGroupElement.anticommutesAt (n := 9) z.operators x.operators)).card))) :
-    z * x = x * z :=
-  (NQubitPauliGroupElement.commutes_iff_even_anticommutes z x).2 hEven
-
 private lemma M1_comm_M7 : M1 * M7 = M7 * M1 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M1.operators M7.operators)) =
@@ -128,14 +119,11 @@ private lemma M1_comm_M7 : M1 * M7 = M7 * M1 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M1, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M1.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M1 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M1_comm_M8 : M1 * M8 = M8 * M1 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M1.operators M8.operators)) =
@@ -143,14 +131,11 @@ private lemma M1_comm_M8 : M1 * M8 = M8 * M1 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M1, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M1.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M1 M8 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M2_comm_M7 : M2 * M7 = M7 * M2 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M2.operators M7.operators)) =
@@ -158,14 +143,11 @@ private lemma M2_comm_M7 : M2 * M7 = M7 * M2 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M2, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M2.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M2 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M2_comm_M8 : M2 * M8 = M8 * M2 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M2.operators M8.operators)) =
@@ -173,14 +155,11 @@ private lemma M2_comm_M8 : M2 * M8 = M8 * M2 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M2, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M2.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M2 M8 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M3_comm_M7 : M3 * M7 = M7 * M3 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M3.operators M7.operators)) =
@@ -188,14 +167,11 @@ private lemma M3_comm_M7 : M3 * M7 = M7 * M3 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M3, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M3.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M3 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M3_comm_M8 : M3 * M8 = M8 * M3 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M3.operators M8.operators)) =
@@ -203,14 +179,11 @@ private lemma M3_comm_M8 : M3 * M8 = M8 * M3 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M3, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M3.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M3 M8 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M4_comm_M7 : M4 * M7 = M7 * M4 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M4.operators M7.operators)) =
@@ -218,14 +191,11 @@ private lemma M4_comm_M7 : M4 * M7 = M7 * M4 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M4, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M4.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M4 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M4_comm_M8 : M4 * M8 = M8 * M4 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M4.operators M8.operators)) =
@@ -233,14 +203,11 @@ private lemma M4_comm_M8 : M4 * M8 = M8 * M4 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M4, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M4.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M4 M8 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M5_comm_M7 : M5 * M7 = M7 * M5 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M5.operators M7.operators)) =
@@ -248,14 +215,11 @@ private lemma M5_comm_M7 : M5 * M7 = M7 * M5 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M5, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M5.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M5 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M5_comm_M8 : M5 * M8 = M8 * M5 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M5.operators M8.operators)) =
@@ -263,14 +227,11 @@ private lemma M5_comm_M8 : M5 * M8 = M8 * M5 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M5, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M5.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M5 M8 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M6_comm_M7 : M6 * M7 = M7 * M6 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M6.operators M7.operators)) =
@@ -278,14 +239,11 @@ private lemma M6_comm_M7 : M6 * M7 = M7 * M6 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M6, M7,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M6.operators M7.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M6 M7 (by simpa using hEven)
+  simp [hfilter]
 
 private lemma M6_comm_M8 : M6 * M8 = M8 * M6 := by
   classical
+  pauli_comm_even_anticommutes
   have hfilter :
       (Finset.univ.filter
             (NQubitPauliGroupElement.anticommutesAt (n := 9) M6.operators M8.operators)) =
@@ -293,11 +251,7 @@ private lemma M6_comm_M8 : M6 * M8 = M8 * M6 := by
     ext i; fin_cases i <;>
       simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, M6, M8,
         NQubitPauliOperator.set, NQubitPauliOperator.identity, PauliOperator.mulOp]
-  have hEven : Even
-      ((Finset.univ.filter
-            (NQubitPauliGroupElement.anticommutesAt (n := 9) M6.operators M8.operators)).card) := by
-    simp [hfilter]
-  exact commute_by_even_anticommutes M6 M8 (by simpa using hEven)
+  simp [hfilter]
 
 lemma ZGenerators_commute_XGenerators :
     ∀ z ∈ ZGenerators, ∀ x ∈ XGenerators, z * x = x * z := by
