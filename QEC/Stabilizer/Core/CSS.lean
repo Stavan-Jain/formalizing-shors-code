@@ -44,6 +44,15 @@ lemma IsXType_I : IsXType PauliOperator.I := Or.inl rfl
 /-- The Pauli `X` is X-type. -/
 lemma IsXType_X : IsXType PauliOperator.X := Or.inr rfl
 
+/-- The only single-qubit Pauli that is both Z-type and X-type is `I`. -/
+lemma eq_I_of_IsZType_and_IsXType {p : PauliOperator} (hz : IsZType p) (hx : IsXType p) :
+    p = PauliOperator.I := by
+  match hz, hx with
+  | Or.inl hI, Or.inl _ => exact hI
+  | Or.inl hI, Or.inr hX => exact absurd (hI.symm.trans hX) (by decide : I ≠ X)
+  | Or.inr hZ, Or.inl hI => exact absurd (hZ.symm.trans hI) (by decide : Z ≠ I)
+  | Or.inr hZ, Or.inr hX => exact absurd (hZ.symm.trans hX) (by decide : Z ≠ X)
+
 /-!
 ## Closure of types under single-qubit multiplication (`mulOp`)
 -/
@@ -271,6 +280,15 @@ theorem IsXTypeElement_of_mem_closure {n : ℕ} {S : Set (NQubitPauliGroupElemen
     (fun x y _ _ hx hy => IsXTypeElement_mul hx hy)
     (fun x _ hx => IsXTypeElement_inv hx)
     hg
+
+/-- The only n-qubit Pauli group element that is both Z-type and X-type is the identity.
+  Used to show that an X-type logical operator is not in a Z-only stabilizer (and vice versa). -/
+theorem eq_one_of_IsZTypeElement_and_IsXTypeElement {n : ℕ} {g : NQubitPauliGroupElement n}
+    (hz : IsZTypeElement g) (hx : IsXTypeElement g) : g = 1 := by
+  apply NQubitPauliGroupElement.ext g 1
+  · simp [hz.1]
+  · ext i
+    exact PauliOperator.eq_I_of_IsZType_and_IsXType (hz.2 i) (hx.2 i)
 
 /-!
 ## Identity-operators criterion for a Z*X product

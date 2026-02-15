@@ -2,6 +2,7 @@ import QEC.Stabilizer.BinarySymplectic.Core
 import QEC.Stabilizer.BinarySymplectic.SymplecticInner
 import QEC.Stabilizer.BinarySymplectic.CheckMatrix
 import QEC.Stabilizer.BinarySymplectic.IndependentEquiv
+import QEC.Stabilizer.BinarySymplectic.SymplecticSpan
 
 /-!
 # Binary symplectic representation and check matrix

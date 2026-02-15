@@ -101,6 +101,18 @@ theorem anticommutes_iff_symplectic_inner_one (p q : NQubitPauliGroupElement n) 
   rw [hcast]
   rw [ZMod.natCast_eq_one_iff_odd, Nat.odd_iff]
 
+/-- The all-X and all-Z n-qubit operators (with phase 0) anticommute when n is odd:
+    symplectic inner product is 1 at each qubit, so total is n ≡ 1 (mod 2). -/
+theorem allX_allZ_anticommute (n : ℕ) (hn : Odd n) :
+    NQubitPauliGroupElement.Anticommute (⟨0, X n⟩ : NQubitPauliGroupElement n)
+      (⟨0, Z n⟩ : NQubitPauliGroupElement n) := by
+  rw [anticommutes_iff_symplectic_inner_one]
+  unfold symplecticInner
+  simp only [X, Z, PauliOperator.symplecticProductSingle, PauliOperator.toSymplecticSingle_X,
+    PauliOperator.toSymplecticSingle_Z, one_mul, zero_mul, add_zero]
+  rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, Nat.smul_one_eq_cast,
+    ZMod.natCast_eq_one_iff_odd]
+  exact hn
 
 end NQubitPauliOperator
 

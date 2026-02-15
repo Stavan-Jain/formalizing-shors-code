@@ -1,8 +1,14 @@
+import Mathlib.Algebra.Ring.Parity
+import QEC.Stabilizer.BinarySymplectic.Core
+import QEC.Stabilizer.BinarySymplectic.CheckMatrix
+import QEC.Stabilizer.BinarySymplectic.SymplecticSpan
 import QEC.Stabilizer.BinarySymplectic.SymplecticInner
+import QEC.Stabilizer.BinarySymplectic.IndependentEquiv
 import QEC.Stabilizer.PauliGroup.Commutation
 import QEC.Stabilizer.PauliGroup.CommutationTactics
 import QEC.Stabilizer.Core.StabilizerGroup
 import QEC.Stabilizer.Core.SubgroupLemmas
+import QEC.Stabilizer.Core.CSS
 import QEC.Stabilizer.Core.CSSNoNegI
 import QEC.Stabilizer.Core.Centralizer
 import QEC.Stabilizer.PauliGroup.NQubitOperator
@@ -24,6 +30,20 @@ def Z2Z3 : NQubitPauliGroupElement 3 :=
 /-- The generator set for the 3-qubit repetition-code stabilizer subgroup. -/
 def generators : Set (NQubitPauliGroupElement 3) :=
   {Z1Z2, Z2Z3}
+
+/-- Generators as a list (for symplectic-span arguments). -/
+def generatorsList : List (NQubitPauliGroupElement 3) :=
+  [Z1Z2, Z2Z3]
+
+lemma listToSet_generatorsList : NQubitPauliGroupElement.listToSet generatorsList = generators := by
+  ext g
+  simp only [NQubitPauliGroupElement.listToSet, Set.mem_setOf, generatorsList, generators,
+    List.mem_cons, List.mem_nil_iff, or_false, Set.mem_insert_iff, Set.mem_singleton_iff]
+
+lemma AllPhaseZero_generatorsList : NQubitPauliGroupElement.AllPhaseZero generatorsList := by
+  intro g hg
+  simp only [generatorsList, List.mem_cons, List.mem_nil_iff, or_false] at hg
+  rcases hg with rfl | rfl <;> rfl
 
 /-- The generators commute (proved componentwise). -/
 lemma Z1Z2_commutes_Z2Z3 : Z1Z2 * Z2Z3 = Z2Z3 * Z1Z2 := by
@@ -102,18 +122,13 @@ noncomputable def stabilizerGroup : StabilizerGroup 3 :=
 def logicalX : NQubitPauliGroupElement 3 :=
   ⟨0, NQubitPauliOperator.X 3⟩
 
-/-- Logical Z: Z on qubit 0 only. -/
+/-- Logical Z: Z on all three qubits (Z₁Z₂Z₃). -/
 def logicalZ : NQubitPauliGroupElement 3 :=
-  ⟨0, (NQubitPauliOperator.identity 3).set 0 PauliOperator.Z⟩
+  ⟨0, NQubitPauliOperator.Z 3⟩
 
-/-- Logical X and logical Z anticommute: X⊗X⊗X and Z⊗I⊗I differ on exactly one qubit (qubit 0). -/
-theorem logicalX_anticommutes_logicalZ : NQubitPauliGroupElement.Anticommute logicalX logicalZ := by
-  rw [NQubitPauliOperator.anticommutes_iff_symplectic_inner_one]
-  unfold NQubitPauliOperator.symplecticInner
-  simp only [logicalX, logicalZ, NQubitPauliOperator.X, NQubitPauliOperator.set,
-    NQubitPauliOperator.identity, PauliOperator.symplecticProductSingle,
-    PauliOperator.toSymplecticSingle_X]
-  decide
+/-- Logical X and logical Z anticommute: X⊗X⊗X and Z⊗Z⊗Z anticommute at every qubit. -/
+theorem logicalX_anticommutes_logicalZ : NQubitPauliGroupElement.Anticommute logicalX logicalZ :=
+  NQubitPauliOperator.allX_allZ_anticommute 3 (by decide)
 
 private lemma logicalX_commutes_Z1Z2 : logicalX * Z1Z2 = Z1Z2 * logicalX := by
   classical
@@ -168,50 +183,56 @@ lemma logicalX_is_XType : NQubitPauliGroupElement.IsXTypeElement logicalX := by
   · intro i
     fin_cases i <;> simp [logicalX, NQubitPauliOperator.X, PauliOperator.IsXType]
 
-/-- The subgroup has exactly four elements: 1, Z1Z2, Z2Z3, Z1Z2*Z2Z3. -/
-private lemma subgroup_elems (g : NQubitPauliGroupElement 3) (hg : g ∈ subgroup) :
-    g = 1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
-  refine Subgroup.closure_induction (p := fun x _ => x = 1 ∨ x = Z1Z2 ∨ x = Z2Z3 ∨ x = Z1Z2 * Z2Z3)
-    (fun g hg' => ?_) (by left; rfl) (fun x y _ _ => ?_) (fun x _ => ?_) hg
-  · simp [generators] at hg'
-    rcases hg' with rfl | rfl
-    · right; left; rfl
-    · right; right; left; rfl
-  · rintro ( rfl | rfl | rfl | rfl ) ( rfl | rfl | rfl | rfl ) <;> simp +decide [ * ];
-    all_goals simp_all +decide [ eq_comm, NQubitPauliGroupElement.ext_iff,
-    NQubitPauliOperator.ext_iff ]
-  · rintro hx'
-    rcases hx' with rfl | rfl | rfl | rfl
-    · left; rfl
-    · right; left; simp [Z1Z2, NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
-    · right; right; left; simp [Z2Z3, NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
-    · right; right; right; rw [mul_inv_rev]
-      have h2 : (Z2Z3)⁻¹ = Z2Z3 := by simp [Z2Z3,
-      NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
-      have h3 : (Z1Z2)⁻¹ = Z1Z2 := by simp [Z1Z2,
-      NQubitPauliGroupElement.inv_eq, NQubitPauliGroupElement.inv]
-      rw [h2, h3, Z1Z2_commutes_Z2Z3]
+/-- Every vector in the symplectic span of Z-only generators has zero X-part
+  (first n components). -/
+private lemma sympSpan_ZType_XPart_zero (v : Fin (3 + 3) → ZMod 2)
+    (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) (i : Fin 3) :
+    v (Fin.castAdd 3 i) = 0 := by
+  have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList {Fin.castAdd 3 i}
+    (fun k => by
+      simp only [NQubitPauliGroupElement.checkMatrix, Finset.sum_singleton]
+      rw [NQubitPauliOperator.toSymplectic_X_part]
+      fin_cases k <;> fin_cases i <;> decide)
+    v hv
+  simp only [Finset.sum_singleton] at this
+  exact this
 
-theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup := by
-  -- By definition of subgroup, if logicalX were in the subgroup, it would have
-  -- to be one of the elements 1, Z1Z2, Z2Z3, or Z1Z2*Z2Z3.
-  have h_cases : ∀ g ∈ subgroup, g = 1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
-    -- Apply the lemma that states any element in the subgroup is one of the four elements.
-    apply subgroup_elems;
-  -- By checking each element in the subgroup, we can see that logicalX is not equal to any of them.
-  have h_not_in_subgroup : logicalX ≠ 1 ∧ logicalX ≠ Z1Z2 ∧ logicalX ≠ Z2Z3 ∧
-  logicalX ≠ Z1Z2 * Z2Z3 := by
-    simp +decide [ NQubitPauliGroupElement.ext_iff, NQubitPauliOperator.ext_iff ];
-  intros h_mem
-  have h_eq : logicalX = 1 ∨ logicalX = Z1Z2 ∨ logicalX = Z2Z3 ∨ logicalX =
-  Z1Z2 * Z2Z3 := h_cases logicalX h_mem
-  exact h_not_in_subgroup.left (by tauto)
+/-- Vectors in the symplectic span of [Z1Z2, Z2Z3] satisfy Z₁ = Z₀ + Z₂ (middle Z-component). -/
+private lemma sympSpan_ZPart_relation (v : Fin (3 + 3) → ZMod 2)
+    (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) :
+    v (Fin.natAdd 3 1) = v (Fin.natAdd 3 0) + v (Fin.natAdd 3 2) := by
+  have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList
+    {Fin.natAdd 3 1, Fin.natAdd 3 0, Fin.natAdd 3 2} (fun k => by
+      simp only [NQubitPauliGroupElement.checkMatrix]
+      fin_cases k <;> rw [Finset.sum_insert (by simp), Finset.sum_insert (by simp),
+        Finset.sum_singleton, NQubitPauliOperator.toSymplectic_Z_part] <;> decide)
+    v hv
+  have h_sum : Finset.sum {Fin.natAdd 3 1, Fin.natAdd 3 0, Fin.natAdd 3 2} (fun j => v j) =
+      v (Fin.natAdd 3 1) + v (Fin.natAdd 3 0) + v (Fin.natAdd 3 2) := by
+    rw [Finset.sum_insert (by simp), Finset.sum_insert (by simp), Finset.sum_singleton, add_assoc]
+  rw [h_sum] at this
+  -- In ZMod 2, v₁ + (v₀ + v₂) = 0 iff v₁ = v₀ + v₂
+  rw [add_assoc] at this
+  have h_eq := eq_neg_iff_add_eq_zero.mpr this
+  rw [h_eq, neg_add]
+  simp only [ZMod.neg_eq_self_mod_two]
+
+theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup :=
+  NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
+    (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalX (by rfl)
+    fun h => by
+      have h0 := sympSpan_ZType_XPart_zero _ h 0
+      rw [show logicalX.operators = NQubitPauliOperator.X 3 from rfl,
+        NQubitPauliOperator.toSymplectic_X_one (i := 0)] at h0
+      exact one_ne_zero h0
 
 private lemma logicalZ_commutes_Z1Z2 : logicalZ * Z1Z2 = Z1Z2 * logicalZ := by
   pauli_comm_componentwise [logicalZ, Z1Z2]
+  all_goals simp only [NQubitPauliOperator.Z]
 
 private lemma logicalZ_commutes_Z2Z3 : logicalZ * Z2Z3 = Z2Z3 * logicalZ := by
   pauli_comm_componentwise [logicalZ, Z2Z3]
+  all_goals simp only [NQubitPauliOperator.Z]
 
 theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := by
   rw [StabilizerGroup.mem_centralizer_iff]
@@ -234,18 +255,17 @@ theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := b
         NQubitPauliGroupElement.mul_assoc, inv_mul_cancel, NQubitPauliGroupElement.mul_one]
     exact mul_right_cancel H
 
-theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup := by
-  have h_subgroup : ∀ g ∈ Quantum.StabilizerGroup.RepetitionCode3.subgroup, g =
-  1 ∨ g = Z1Z2 ∨ g = Z2Z3 ∨ g = Z1Z2 * Z2Z3 := by
-    intro g hg
-    apply subgroup_elems g hg;
-  contrapose! h_subgroup;
-  refine ⟨ logicalZ, h_subgroup, ?_, ?_, ?_, ?_ ⟩
-  all_goals simp +decide [ NQubitPauliGroupElement.ext_iff ];
-  · exact fun h => by have := congr_fun h 0; simp +decide at this;
-  · simp +decide [ NQubitPauliOperator.ext_iff ];
-  · simp +decide [ NQubitPauliOperator.ext_iff ];
-  · simp +decide [ NQubitPauliOperator.ext_iff ]
+theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup :=
+  NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
+    (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalZ (by rfl)
+    fun h => by
+      have h_rel := sympSpan_ZPart_relation _ h
+      rw [show logicalZ.operators = NQubitPauliOperator.Z 3 from rfl,
+        NQubitPauliOperator.toSymplectic_Z_one (i := 0),
+        NQubitPauliOperator.toSymplectic_Z_one (i := 1),
+        NQubitPauliOperator.toSymplectic_Z_one (i := 2)] at h_rel
+      have h10 : (1 + 1 : ZMod 2) = 0 := by decide
+      exact one_ne_zero (h_rel.trans h10)
 
 end RepetitionCode3
 end StabilizerGroup

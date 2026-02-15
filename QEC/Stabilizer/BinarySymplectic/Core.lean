@@ -71,6 +71,16 @@ lemma toSymplectic_Z_part (op : NQubitPauliOperator n) (i : Fin n) :
   have hge : ¬(Fin.natAdd n i).val < n := by simp [Fin.natAdd]
   simp
 
+/-- The all-X n-qubit operator has X-component 1 at every qubit. -/
+lemma toSymplectic_X_one (i : Fin n) :
+    toSymplectic (X n) (Fin.castAdd n i) = 1 := by
+  rw [toSymplectic_X_part]; simp only [X, PauliOperator.toSymplecticSingle_X]
+
+/-- The all-Z n-qubit operator has Z-component 1 at every qubit. -/
+lemma toSymplectic_Z_one (i : Fin n) :
+    toSymplectic (Z n) (Fin.natAdd n i) = 1 := by
+  rw [toSymplectic_Z_part]; simp only [Z, PauliOperator.toSymplecticSingle_Z]
+
 /-- Extensionality: equal operators give equal symplectic vectors. -/
 lemma toSymplectic_congr (op₁ op₂ : NQubitPauliOperator n) (h : op₁ = op₂) (j : Fin (n + n)) :
     toSymplectic op₁ j = toSymplectic op₂ j := by rw [h]

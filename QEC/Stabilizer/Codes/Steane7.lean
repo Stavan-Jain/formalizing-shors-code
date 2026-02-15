@@ -2,8 +2,15 @@ import Mathlib.Tactic
 import QEC.Stabilizer.Core.StabilizerGroup
 import QEC.Stabilizer.Core.SubgroupLemmas
 import QEC.Stabilizer.Core.CSSNoNegI
+import QEC.Stabilizer.Core.Centralizer
 import QEC.Stabilizer.PauliGroup.Commutation
 import QEC.Stabilizer.PauliGroup.CommutationTactics
+import QEC.Stabilizer.BinarySymplectic.Core
+import QEC.Stabilizer.BinarySymplectic.CheckMatrix
+import QEC.Stabilizer.BinarySymplectic.SymplecticSpan
+import QEC.Stabilizer.BinarySymplectic.IndependentEquiv
+import QEC.Stabilizer.BinarySymplectic.SymplecticInner
+import QEC.Stabilizer.PauliGroup.NQubitOperator
 
 namespace Quantum
 open scoped BigOperators
@@ -290,8 +297,224 @@ noncomputable def stabilizerGroup : StabilizerGroup 7 :=
 , no_neg_identity := by
     simpa using negIdentity_not_mem }
 
+/-!
+## Logical operators
+
+Logical X = X on all 7 qubits, logical Z = Z on all 7 qubits. They commute with the
+stabilizer, anticommute with each other, and are not in the subgroup (proved via
+symplectic span).
+-/
+
+/-- Generators as a list (for symplectic-span arguments). -/
+def generatorsList : List (NQubitPauliGroupElement 7) :=
+  [Z1, Z2, Z3, X1, X2, X3]
+
+lemma listToSet_generatorsList : NQubitPauliGroupElement.listToSet generatorsList = generators := by
+  ext g
+  simp only [NQubitPauliGroupElement.listToSet, Set.mem_setOf, generatorsList, generators,
+    ZGenerators, XGenerators, List.mem_cons, List.mem_nil_iff, or_false, Set.mem_union,
+    Set.mem_insert_iff, Set.mem_singleton_iff]
+  grind
+
+lemma AllPhaseZero_generatorsList : NQubitPauliGroupElement.AllPhaseZero generatorsList := by
+  intro g hg
+  simp only [generatorsList, List.mem_cons, List.mem_nil_iff, or_false] at hg
+  rcases hg with rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
+
+/-- Logical X: X on all seven qubits. -/
+def logicalX : NQubitPauliGroupElement 7 :=
+  ⟨0, NQubitPauliOperator.X 7⟩
+
+/-- Logical Z: Z on all seven qubits. -/
+def logicalZ : NQubitPauliGroupElement 7 :=
+  ⟨0, NQubitPauliOperator.Z 7⟩
+
+/-- Logical X and logical Z anticommute (symplectic inner product 1 mod 2). -/
+theorem logicalX_anticommutes_logicalZ : NQubitPauliGroupElement.Anticommute logicalX logicalZ :=
+  NQubitPauliOperator.allX_allZ_anticommute 7 (by decide)
+
+private lemma logicalX_commutes_Z1 : logicalX * Z1 = Z1 * logicalX := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalX.operators Z1.operators)) =
+        ({0, 1, 2, 4} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalX, Z1,
+        NQubitPauliOperator.X, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+private lemma logicalX_commutes_Z2 : logicalX * Z2 = Z2 * logicalX := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalX.operators Z2.operators)) =
+        ({0, 1, 3, 5} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalX, Z2,
+        NQubitPauliOperator.X, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+private lemma logicalX_commutes_Z3 : logicalX * Z3 = Z3 * logicalX := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalX.operators Z3.operators)) =
+        ({0, 2, 3, 6} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalX, Z3,
+        NQubitPauliOperator.X, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+private lemma logicalX_commutes_X1 : logicalX * X1 = X1 * logicalX := by
+  pauli_comm_componentwise [logicalX, X1, NQubitPauliOperator.X]
+
+private lemma logicalX_commutes_X2 : logicalX * X2 = X2 * logicalX := by
+  pauli_comm_componentwise [logicalX, X2, NQubitPauliOperator.X]
+
+private lemma logicalX_commutes_X3 : logicalX * X3 = X3 * logicalX := by
+  pauli_comm_componentwise [logicalX, X3, NQubitPauliOperator.X]
+
+theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := by
+  rw [StabilizerGroup.mem_centralizer_iff]; simp only [stabilizerGroup, subgroup]
+  rw [Subgroup.forall_comm_closure_iff]
+  intro s hs
+  simp [generators] at hs
+  rcases hs with hgZ | hgX
+  · rcases (by simpa [ZGenerators] using hgZ) with rfl | rfl | rfl
+    · exact logicalX_commutes_Z1.symm
+    · exact logicalX_commutes_Z2.symm
+    · exact logicalX_commutes_Z3.symm
+  · rcases (by simpa [XGenerators] using hgX) with rfl | rfl | rfl
+    · exact logicalX_commutes_X1.symm
+    · exact logicalX_commutes_X2.symm
+    · exact logicalX_commutes_X3.symm
+
+/-- Every vector in the symplectic span of the Steane generators has X-part satisfying
+  v₁ + v₂ + v₃ = 0 (indices 1,2,3 of the X-block). -/
+private lemma sympSpan_XPart_relation (v : Fin (7 + 7) → ZMod 2)
+    (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) :
+    v (Fin.castAdd 7 1) + v (Fin.castAdd 7 2) + v (Fin.castAdd 7 3) = 0 := by
+  have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList
+    {Fin.castAdd 7 1, Fin.castAdd 7 2, Fin.castAdd 7 3} (fun k => by
+      simp only [NQubitPauliGroupElement.checkMatrix, NQubitPauliOperator.toSymplectic_X_part]
+      fin_cases k <;> simp only [generatorsList, List.get_cons_succ, Z1, Z2, Z3, X1, X2, X3] <;> decide)
+    v hv
+  have h_sum : Finset.sum {Fin.castAdd 7 1, Fin.castAdd 7 2, Fin.castAdd 7 3} (fun j => v j) =
+      v (Fin.castAdd 7 1) + v (Fin.castAdd 7 2) + v (Fin.castAdd 7 3) := by
+    rw [Finset.sum_insert (by simp), Finset.sum_insert (by simp), Finset.sum_singleton, add_assoc]
+  rw [h_sum] at this
+  exact this
+
+theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup :=
+  NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
+    (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalX (by rfl)
+    fun h => by
+      have h_rel := sympSpan_XPart_relation _ h
+      rw [show logicalX.operators = NQubitPauliOperator.X 7 from rfl,
+        NQubitPauliOperator.toSymplectic_X_one (i := 1),
+        NQubitPauliOperator.toSymplectic_X_one (i := 2),
+        NQubitPauliOperator.toSymplectic_X_one (i := 3)] at h_rel
+      have h10 : (1 + 1 + 1 : ZMod 2) = 1 := by decide
+      exact (by decide : (1 : ZMod 2) ≠ 0) (h_rel.symm.trans h10).symm
+
+private lemma logicalZ_commutes_Z1 : logicalZ * Z1 = Z1 * logicalZ := by
+  pauli_comm_componentwise [logicalZ, Z1, NQubitPauliOperator.Z]
+
+private lemma logicalZ_commutes_Z2 : logicalZ * Z2 = Z2 * logicalZ := by
+  pauli_comm_componentwise [logicalZ, Z2, NQubitPauliOperator.Z]
+
+private lemma logicalZ_commutes_Z3 : logicalZ * Z3 = Z3 * logicalZ := by
+  pauli_comm_componentwise [logicalZ, Z3, NQubitPauliOperator.Z]
+
+private lemma logicalZ_commutes_X1 : logicalZ * X1 = X1 * logicalZ := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalZ.operators X1.operators)) =
+        ({0, 1, 2, 4} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalZ, X1,
+        NQubitPauliOperator.Z, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+private lemma logicalZ_commutes_X2 : logicalZ * X2 = X2 * logicalZ := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalZ.operators X2.operators)) =
+        ({0, 1, 3, 5} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalZ, X2,
+        NQubitPauliOperator.Z, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+private lemma logicalZ_commutes_X3 : logicalZ * X3 = X3 * logicalZ := by
+  classical
+  pauli_comm_even_anticommutes
+  have hfilter :
+      (Finset.univ.filter
+            (NQubitPauliGroupElement.anticommutesAt (n := 7) logicalZ.operators X3.operators)) =
+        ({0, 2, 3, 6} : Finset (Fin 7)) := by
+    ext i; fin_cases i <;>
+      simp [Finset.mem_filter, NQubitPauliGroupElement.anticommutesAt, logicalZ, X3,
+        NQubitPauliOperator.Z, NQubitPauliOperator.set, NQubitPauliOperator.identity,
+        PauliOperator.mulOp]
+  rw [hfilter]; decide
+
+theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := by
+  rw [StabilizerGroup.mem_centralizer_iff]; simp only [stabilizerGroup, subgroup]
+  rw [Subgroup.forall_comm_closure_iff]
+  intro s hs
+  simp [generators] at hs
+  rcases hs with hgZ | hgX
+  · rcases (by simpa [ZGenerators] using hgZ) with rfl | rfl | rfl
+    · exact logicalZ_commutes_Z1.symm
+    · exact logicalZ_commutes_Z2.symm
+    · exact logicalZ_commutes_Z3.symm
+  · rcases (by simpa [XGenerators] using hgX) with rfl | rfl | rfl
+    · exact logicalZ_commutes_X1.symm
+    · exact logicalZ_commutes_X2.symm
+    · exact logicalZ_commutes_X3.symm
+
+/-- Every vector in the symplectic span has Z-part satisfying z₁ + z₂ + z₃ = 0. -/
+private lemma sympSpan_ZPart_relation (v : Fin (7 + 7) → ZMod 2)
+    (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) :
+    v (Fin.natAdd 7 1) + v (Fin.natAdd 7 2) + v (Fin.natAdd 7 3) = 0 := by
+  have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList
+    {Fin.natAdd 7 1, Fin.natAdd 7 2, Fin.natAdd 7 3} (fun k => by
+      simp only [NQubitPauliGroupElement.checkMatrix, NQubitPauliOperator.toSymplectic_Z_part]
+      fin_cases k <;> simp only [generatorsList, List.get_cons_succ, Z1, Z2, Z3, X1, X2, X3] <;> decide)
+    v hv
+  have h_sum : Finset.sum {Fin.natAdd 7 1, Fin.natAdd 7 2, Fin.natAdd 7 3} (fun j => v j) =
+      v (Fin.natAdd 7 1) + v (Fin.natAdd 7 2) + v (Fin.natAdd 7 3) := by
+    rw [Finset.sum_insert (by simp), Finset.sum_insert (by simp), Finset.sum_singleton, add_assoc]
+  rw [h_sum] at this
+  exact this
+
+theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup :=
+  NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
+    (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalZ (by rfl)
+    fun h => by
+      have h_rel := sympSpan_ZPart_relation _ h
+      rw [show logicalZ.operators = NQubitPauliOperator.Z 7 from rfl,
+        NQubitPauliOperator.toSymplectic_Z_one (i := 1),
+        NQubitPauliOperator.toSymplectic_Z_one (i := 2),
+        NQubitPauliOperator.toSymplectic_Z_one (i := 3)] at h_rel
+      have h10 : (1 + 1 + 1 : ZMod 2) = 1 := by decide
+      exact (by decide : (1 : ZMod 2) ≠ 0) (h_rel.symm.trans h10).symm
+
 end Steane7
 end StabilizerGroup
 
 end Quantum
-

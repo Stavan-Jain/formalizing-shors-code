@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Group.Subgroup.Lattice
+import Mathlib.GroupTheory.Subgroup.Centralizer
 import Mathlib.Tactic
 
 /-!
@@ -7,6 +8,7 @@ import Mathlib.Tactic
 This file collects small, reusable lemmas about `Subgroup.closure` that are useful when
 constructing stabilizer groups:
 
+- centralizer of a closure: membership iff commutes with every generator
 - lifting commutation from generators to their closures
 - proving a generated subgroup is abelian from pairwise commutation of generators
 
@@ -14,6 +16,40 @@ These are generic group-theoretic statements (no Pauli-specific content).
 -/
 
 namespace Subgroup
+
+/-!
+## Centralizer of a closure
+-/
+
+/-- An element lies in the centralizer of `closure S` iff it commutes with every
+    element of `S`. So to show a logical operator is in the centralizer, it suffices
+    to prove it commutes with each generator. -/
+theorem mem_centralizer_closure_iff {G : Type*} [Group G] (g : G) (S : Set G) :
+    g ∈ Subgroup.centralizer (closure S : Set G) ↔ ∀ s ∈ S, s * g = g * s := by
+  constructor
+  · intro hg s hs
+    exact hg s (subset_closure hs)
+  · intro hg h hh
+    refine closure_induction (p := fun h _ => h * g = g * h) ?_ ?_ ?_ ?_ hh
+    · intro s hs
+      exact hg s hs
+    · simp only [one_mul, mul_one]
+    · intro x y _ _ hx hy
+      calc (x * y) * g = x * (y * g) := by rw [mul_assoc]
+        _ = x * (g * y) := by rw [hy]
+        _ = (x * g) * y := by rw [mul_assoc]
+        _ = (g * x) * y := by rw [hx]
+        _ = g * (x * y) := by rw [mul_assoc]
+    · intro x _ hx
+      have H : (x⁻¹ * g) * x = (g * x⁻¹) * x := by
+        rw [mul_assoc, ← hx, inv_mul_cancel_left, mul_assoc, inv_mul_cancel, mul_one]
+      exact mul_right_cancel H
+
+/-- Reformulation: (∀ h ∈ closure S, h * g = g * h) ↔ (∀ s ∈ S, s * g = g * s).
+    Use this to rewrite a centralizer-membership goal into "commutes with each generator". -/
+theorem forall_comm_closure_iff {G : Type*} [Group G] (g : G) (S : Set G) :
+    (∀ h ∈ closure S, h * g = g * h) ↔ ∀ s ∈ S, s * g = g * s := by
+  rw [← mem_centralizer_closure_iff, mem_centralizer_iff]; rfl
 
 /-!
 ## Lifting commutation from generators to closures
