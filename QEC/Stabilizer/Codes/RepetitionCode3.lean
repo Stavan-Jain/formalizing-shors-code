@@ -1,14 +1,10 @@
-import Mathlib.Algebra.Ring.Parity
 import QEC.Stabilizer.BinarySymplectic.Core
 import QEC.Stabilizer.BinarySymplectic.CheckMatrix
 import QEC.Stabilizer.BinarySymplectic.SymplecticSpan
-import QEC.Stabilizer.BinarySymplectic.SymplecticInner
-import QEC.Stabilizer.BinarySymplectic.IndependentEquiv
 import QEC.Stabilizer.PauliGroup.Commutation
 import QEC.Stabilizer.PauliGroup.CommutationTactics
 import QEC.Stabilizer.Core.StabilizerGroup
 import QEC.Stabilizer.Core.SubgroupLemmas
-import QEC.Stabilizer.Core.CSS
 import QEC.Stabilizer.Core.CSSNoNegI
 import QEC.Stabilizer.Core.Centralizer
 import QEC.Stabilizer.PauliGroup.NQubitOperator
@@ -18,6 +14,13 @@ open scoped BigOperators
 
 namespace StabilizerGroup
 namespace RepetitionCode3
+
+/-!
+# The 3-qubit repetition code (Z-stabilizer only)
+
+Stabilizer generators: Z₁Z₂ and Z₂Z₃ (Z on adjacent pairs). The code encodes one logical qubit;
+logical X = X₁X₂X₃, logical Z = Z₁Z₂Z₃. The subgroup is abelian and does not contain −I.
+-/
 
 /-- Z₁Z₂: Z on qubits 0 and 1, I on qubit 2. -/
 def Z1Z2 : NQubitPauliGroupElement 3 :=
@@ -35,11 +38,13 @@ def generators : Set (NQubitPauliGroupElement 3) :=
 def generatorsList : List (NQubitPauliGroupElement 3) :=
   [Z1Z2, Z2Z3]
 
+/-- The list of generators has the same elements as the generator set. -/
 lemma listToSet_generatorsList : NQubitPauliGroupElement.listToSet generatorsList = generators := by
   ext g
   simp only [NQubitPauliGroupElement.listToSet, Set.mem_setOf, generatorsList, generators,
     List.mem_cons, List.mem_nil_iff, or_false, Set.mem_insert_iff, Set.mem_singleton_iff]
 
+/-- Every element of the generators list has phase power 0. -/
 lemma AllPhaseZero_generatorsList : NQubitPauliGroupElement.AllPhaseZero generatorsList := by
   intro g hg
   simp only [generatorsList, List.mem_cons, List.mem_nil_iff, or_false] at hg
@@ -83,6 +88,7 @@ This is a special case of the reusable CSS lemma with:
 
 open NQubitPauliGroupElement
 
+/-- Each generator is Z-type (I or Z on each qubit). -/
 lemma generators_are_ZType :
     ∀ g, g ∈ generators → NQubitPauliGroupElement.IsZTypeElement g := by
   classical
@@ -95,6 +101,7 @@ lemma generators_are_ZType :
           simp [PauliOperator.IsZType, Z1Z2, Z2Z3, NQubitPauliOperator.set,
             NQubitPauliOperator.identity]
 
+/-- The repetition-code subgroup does not contain −I (CSS lemma with empty X-generators). -/
 lemma negIdentity_not_mem :
     negIdentity 3 ∉ subgroup := by
   -- Apply the generic CSS `-I` exclusion theorem with empty X-generators.
@@ -106,6 +113,7 @@ lemma negIdentity_not_mem :
     (CSS.negIdentity_not_mem_closure_union (n := 3) generators (∅ : Set (NQubitPauliGroupElement 3))
       generators_are_ZType hX hZX)
 
+/-- The 3-qubit repetition code as a stabilizer group: abelian closure of Z₁Z₂ and Z₂Z₃, no −I. -/
 noncomputable def stabilizerGroup : StabilizerGroup 3 :=
 { toSubgroup := subgroup
 , is_abelian := by
@@ -118,7 +126,7 @@ noncomputable def stabilizerGroup : StabilizerGroup 3 :=
 ## Logical operators
 -/
 
-/-- Logical X: X on all three qubits. -/
+/-- Logical X: X on all three qubits (X₁X₂X₃). -/
 def logicalX : NQubitPauliGroupElement 3 :=
   ⟨0, NQubitPauliOperator.X 3⟩
 
@@ -126,7 +134,7 @@ def logicalX : NQubitPauliGroupElement 3 :=
 def logicalZ : NQubitPauliGroupElement 3 :=
   ⟨0, NQubitPauliOperator.Z 3⟩
 
-/-- Logical X and logical Z anticommute: X⊗X⊗X and Z⊗Z⊗Z anticommute at every qubit. -/
+/-- Logical X and logical Z anticommute: X₁X₂X₃ and Z₁Z₂Z₃ anticommute at every qubit. -/
 theorem logicalX_anticommutes_logicalZ : NQubitPauliGroupElement.Anticommute logicalX logicalZ :=
   NQubitPauliOperator.allX_allZ_anticommute 3 (by decide)
 
@@ -156,6 +164,7 @@ private lemma logicalX_commutes_Z2Z3 : logicalX * Z2Z3 = Z2Z3 * logicalX := by
         PauliOperator.mulOp]
   simp [hfilter]
 
+/-- Logical X commutes with every element of the stabilizer. -/
 theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := by
   rw [StabilizerGroup.mem_centralizer_iff]
   intro h hh
@@ -177,6 +186,7 @@ theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := b
         NQubitPauliGroupElement.mul_assoc, inv_mul_cancel, NQubitPauliGroupElement.mul_one]
     exact mul_right_cancel H
 
+/-- Logical X is X-type (X on every qubit). -/
 lemma logicalX_is_XType : NQubitPauliGroupElement.IsXTypeElement logicalX := by
   constructor
   · rfl
@@ -197,7 +207,8 @@ private lemma sympSpan_ZType_XPart_zero (v : Fin (3 + 3) → ZMod 2)
   simp only [Finset.sum_singleton] at this
   exact this
 
-/-- Vectors in the symplectic span of [Z1Z2, Z2Z3] satisfy Z₁ = Z₀ + Z₂ (middle Z-component). -/
+/-- In the symplectic span of the generators, the Z-component on the middle qubit equals
+(mod 2) the sum of the Z-components on the two outer qubits. -/
 private lemma sympSpan_ZPart_relation (v : Fin (3 + 3) → ZMod 2)
     (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) :
     v (Fin.natAdd 3 1) = v (Fin.natAdd 3 0) + v (Fin.natAdd 3 2) := by
@@ -211,12 +222,12 @@ private lemma sympSpan_ZPart_relation (v : Fin (3 + 3) → ZMod 2)
       v (Fin.natAdd 3 1) + v (Fin.natAdd 3 0) + v (Fin.natAdd 3 2) := by
     rw [Finset.sum_insert (by simp), Finset.sum_insert (by simp), Finset.sum_singleton, add_assoc]
   rw [h_sum] at this
-  -- In ZMod 2, v₁ + (v₀ + v₂) = 0 iff v₁ = v₀ + v₂
   rw [add_assoc] at this
   have h_eq := eq_neg_iff_add_eq_zero.mpr this
   rw [h_eq, neg_add]
   simp only [ZMod.neg_eq_self_mod_two]
 
+/-- Logical X ∉ subgroup (symplectic vector has nonzero X-part). -/
 theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup :=
   NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
     (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalX (by rfl)
@@ -234,6 +245,7 @@ private lemma logicalZ_commutes_Z2Z3 : logicalZ * Z2Z3 = Z2Z3 * logicalZ := by
   pauli_comm_componentwise [logicalZ, Z2Z3]
   all_goals simp only [NQubitPauliOperator.Z]
 
+/-- Logical Z commutes with every element of the stabilizer. -/
 theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := by
   rw [StabilizerGroup.mem_centralizer_iff]
   intro h hh
@@ -255,6 +267,8 @@ theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := b
         NQubitPauliGroupElement.mul_assoc, inv_mul_cancel, NQubitPauliGroupElement.mul_one]
     exact mul_right_cancel H
 
+/-- Logical Z ∉ subgroup (its Z-block does not satisfy: middle Z-component equals (mod 2)
+the sum of the Z-components on the two outer qubits). -/
 theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup :=
   NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
     (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalZ (by rfl)

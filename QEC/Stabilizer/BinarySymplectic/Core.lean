@@ -32,6 +32,7 @@ def toSymplecticSingle (P : PauliOperator) : ZMod 2 × ZMod 2 :=
 @[simp] lemma toSymplecticSingle_Y : toSymplecticSingle Y = (1, 1) := rfl
 @[simp] lemma toSymplecticSingle_Z : toSymplecticSingle Z = (0, 1) := rfl
 
+/-- Distinct single-qubit Pauli operators have distinct symplectic (x,z) pairs. -/
 lemma toSymplecticSingle_injective : Function.Injective toSymplecticSingle := by
   rintro a b h
   cases a <;> cases b <;> simp at h <;> rfl
@@ -59,12 +60,14 @@ def toSymplectic (op : NQubitPauliOperator n) (j : Fin (n + n)) : ZMod 2 :=
   else
     (op ⟨j.val - n, by have := j.2; omega⟩).toSymplecticSingle.2
 
+/-- Index `castAdd n i` (in the first n positions) is the X-component of qubit `i`. -/
 lemma toSymplectic_X_part (op : NQubitPauliOperator n) (i : Fin n) :
     toSymplectic op (Fin.castAdd n i) = (op i).toSymplecticSingle.1 := by
   simp only [toSymplectic]
   have hlt : (Fin.castAdd n i).val < n := i.2
   simp
 
+/-- Index `natAdd n i` (in the last n positions) is the Z-component of qubit `i`. -/
 lemma toSymplectic_Z_part (op : NQubitPauliOperator n) (i : Fin n) :
     toSymplectic op (Fin.natAdd n i) = (op i).toSymplecticSingle.2 := by
   simp only [toSymplectic]
