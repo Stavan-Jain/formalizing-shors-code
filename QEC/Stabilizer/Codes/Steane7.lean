@@ -42,45 +42,55 @@ open NQubitPauliGroupElement
 ## Generators
 -/
 
+/-- Z-check on row r₁ = {0,1,2,4}: Z on qubits 0,1,2,4 and I elsewhere. -/
 def Z1 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.Z).set 1 PauliOperator.Z).set 2
       PauliOperator.Z |>.set 4 PauliOperator.Z⟩
 
+/-- Z-check on row r₂ = {0,1,3,5}: Z on qubits 0,1,3,5 and I elsewhere. -/
 def Z2 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.Z).set 1 PauliOperator.Z).set 3
       PauliOperator.Z |>.set 5 PauliOperator.Z⟩
 
+/-- Z-check on row r₃ = {0,2,3,6}: Z on qubits 0,2,3,6 and I elsewhere. -/
 def Z3 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.Z).set 2 PauliOperator.Z).set 3
       PauliOperator.Z |>.set 6 PauliOperator.Z⟩
 
+/-- X-check on row r₁ = {0,1,2,4}: X on qubits 0,1,2,4 and I elsewhere. -/
 def X1 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.X).set 1 PauliOperator.X).set 2
       PauliOperator.X |>.set 4 PauliOperator.X⟩
 
+/-- X-check on row r₂ = {0,1,3,5}: X on qubits 0,1,3,5 and I elsewhere. -/
 def X2 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.X).set 1 PauliOperator.X).set 3
       PauliOperator.X |>.set 5 PauliOperator.X⟩
 
+/-- X-check on row r₃ = {0,2,3,6}: X on qubits 0,2,3,6 and I elsewhere. -/
 def X3 : NQubitPauliGroupElement 7 :=
   ⟨0,
     (((NQubitPauliOperator.identity 7).set 0 PauliOperator.X).set 2 PauliOperator.X).set 3
       PauliOperator.X |>.set 6 PauliOperator.X⟩
 
+/-- The three Z-check generators (Z on each parity-check row). -/
 def ZGenerators : Set (NQubitPauliGroupElement 7) :=
   {Z1, Z2, Z3}
 
+/-- The three X-check generators (X on each parity-check row). -/
 def XGenerators : Set (NQubitPauliGroupElement 7) :=
   {X1, X2, X3}
 
+/-- The full generator set: Z-checks and X-checks. -/
 def generators : Set (NQubitPauliGroupElement 7) :=
   ZGenerators ∪ XGenerators
 
+/-- The Steane stabilizer subgroup: closure of the six generators. -/
 def subgroup : Subgroup (NQubitPauliGroupElement 7) :=
   Subgroup.closure generators
 
@@ -88,6 +98,7 @@ def subgroup : Subgroup (NQubitPauliGroupElement 7) :=
 ## Typing facts: Z-type / X-type generators
 -/
 
+/-- Each Z-generator is Z-type (I or Z on each qubit). -/
 lemma ZGenerators_are_ZType :
     ∀ g, g ∈ ZGenerators → NQubitPauliGroupElement.IsZTypeElement g := by
   classical
@@ -100,6 +111,7 @@ lemma ZGenerators_are_ZType :
           simp [PauliOperator.IsZType, Z1, Z2, Z3, NQubitPauliOperator.set,
             NQubitPauliOperator.identity]
 
+/-- Each X-generator is X-type (I or X on each qubit). -/
 lemma XGenerators_are_XType :
     ∀ g, g ∈ XGenerators → NQubitPauliGroupElement.IsXTypeElement g := by
   classical
@@ -208,6 +220,7 @@ private lemma Z3_comm_X3 : Z3 * X3 = X3 * Z3 := by
         NQubitPauliOperator.identity, PauliOperator.mulOp]
   rw [hfilter]; decide
 
+/-- Every Z-generator commutes with every X-generator (even intersection of row supports). -/
 lemma ZGenerators_commute_XGenerators :
     ∀ z ∈ ZGenerators, ∀ x ∈ XGenerators, z * x = x * z := by
   classical
@@ -258,6 +271,7 @@ private lemma XType_commutes {g h : NQubitPauliGroupElement 7}
   · simp [PauliOperator.mulOp, hgX, hhI]
   · simp [PauliOperator.mulOp, hgX, hhX]
 
+/-- All six generators pairwise commute. -/
 theorem generators_commute :
     ∀ g ∈ generators, ∀ h ∈ generators, g * h = h * g := by
   classical
@@ -274,6 +288,7 @@ theorem generators_commute :
 ## No `-I` in the Steane stabilizer subgroup (CSS lemma)
 -/
 
+/-- The Steane subgroup does not contain −I (CSS lemma with Z- and X-generators). -/
 theorem negIdentity_not_mem :
     negIdentity 7 ∉ subgroup := by
   have hZX : ∀ z ∈ ZGenerators, ∀ x ∈ XGenerators, z * x = x * z :=
@@ -286,6 +301,7 @@ theorem negIdentity_not_mem :
 ## Bundled `StabilizerGroup 7`
 -/
 
+/-- Steane code as `StabilizerGroup 7`: abelian closure of the six checks, no −I. -/
 noncomputable def stabilizerGroup : StabilizerGroup 7 :=
 { toSubgroup := subgroup
 , is_abelian := by
@@ -309,6 +325,7 @@ symplectic span).
 def generatorsList : List (NQubitPauliGroupElement 7) :=
   [Z1, Z2, Z3, X1, X2, X3]
 
+/-- The list of generators has the same elements as the generator set. -/
 lemma listToSet_generatorsList : NQubitPauliGroupElement.listToSet generatorsList = generators := by
   ext g
   simp only [NQubitPauliGroupElement.listToSet, Set.mem_setOf, generatorsList, generators,
@@ -316,6 +333,7 @@ lemma listToSet_generatorsList : NQubitPauliGroupElement.listToSet generatorsLis
     Set.mem_insert_iff, Set.mem_singleton_iff]
   grind
 
+/-- Every element of the generators list has phase power 0. -/
 lemma AllPhaseZero_generatorsList : NQubitPauliGroupElement.AllPhaseZero generatorsList := by
   intro g hg
   simp only [generatorsList, List.mem_cons, List.mem_nil_iff, or_false] at hg
@@ -381,6 +399,7 @@ private lemma logicalX_commutes_X2 : logicalX * X2 = X2 * logicalX := by
 private lemma logicalX_commutes_X3 : logicalX * X3 = X3 * logicalX := by
   pauli_comm_componentwise [logicalX, X3, NQubitPauliOperator.X]
 
+/-- Logical X commutes with every element of the stabilizer. -/
 theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := by
   rw [StabilizerGroup.mem_centralizer_iff]; simp only [stabilizerGroup, subgroup]
   rw [Subgroup.forall_comm_closure_iff]
@@ -396,15 +415,17 @@ theorem logicalX_mem_centralizer : logicalX ∈ centralizer stabilizerGroup := b
     · exact logicalX_commutes_X2.symm
     · exact logicalX_commutes_X3.symm
 
-/-- Every vector in the symplectic span of the Steane generators has X-part satisfying
+/-- Every vector in the symplectic span of the Steane generators has X-part
+satisfying
   v₁ + v₂ + v₃ = 0 (indices 1,2,3 of the X-block). -/
 private lemma sympSpan_XPart_relation (v : Fin (7 + 7) → ZMod 2)
     (hv : v ∈ NQubitPauliGroupElement.sympSpan generatorsList) :
     v (Fin.castAdd 7 1) + v (Fin.castAdd 7 2) + v (Fin.castAdd 7 3) = 0 := by
   have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList
     {Fin.castAdd 7 1, Fin.castAdd 7 2, Fin.castAdd 7 3} (fun k => by
-      simp only [NQubitPauliGroupElement.checkMatrix, NQubitPauliOperator.toSymplectic_X_part]
-      fin_cases k <;> simp only [generatorsList, List.get_cons_succ, Z1, Z2, Z3, X1, X2, X3] <;> decide)
+      simp only [NQubitPauliGroupElement.checkMatrix]
+      fin_cases k <;> simp only [generatorsList, List.get_cons_succ, Z1, Z2,
+      Z3, X1, X2, X3] <;> decide)
     v hv
   have h_sum : Finset.sum {Fin.castAdd 7 1, Fin.castAdd 7 2, Fin.castAdd 7 3} (fun j => v j) =
       v (Fin.castAdd 7 1) + v (Fin.castAdd 7 2) + v (Fin.castAdd 7 3) := by
@@ -412,6 +433,7 @@ private lemma sympSpan_XPart_relation (v : Fin (7 + 7) → ZMod 2)
   rw [h_sum] at this
   exact this
 
+/-- Logical X ∉ subgroup (symplectic vector violates X-part relation). -/
 theorem logicalX_not_mem_subgroup : logicalX ∉ subgroup :=
   NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
     (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalX (by rfl)
@@ -472,6 +494,7 @@ private lemma logicalZ_commutes_X3 : logicalZ * X3 = X3 * logicalZ := by
         PauliOperator.mulOp]
   rw [hfilter]; decide
 
+/-- Logical Z commutes with every element of the stabilizer. -/
 theorem logicalZ_mem_centralizer : logicalZ ∈ centralizer stabilizerGroup := by
   rw [StabilizerGroup.mem_centralizer_iff]; simp only [stabilizerGroup, subgroup]
   rw [Subgroup.forall_comm_closure_iff]
@@ -493,8 +516,9 @@ private lemma sympSpan_ZPart_relation (v : Fin (7 + 7) → ZMod 2)
     v (Fin.natAdd 7 1) + v (Fin.natAdd 7 2) + v (Fin.natAdd 7 3) = 0 := by
   have := NQubitPauliGroupElement.sympSpan_sum_eq_zero generatorsList
     {Fin.natAdd 7 1, Fin.natAdd 7 2, Fin.natAdd 7 3} (fun k => by
-      simp only [NQubitPauliGroupElement.checkMatrix, NQubitPauliOperator.toSymplectic_Z_part]
-      fin_cases k <;> simp only [generatorsList, List.get_cons_succ, Z1, Z2, Z3, X1, X2, X3] <;> decide)
+      simp only [NQubitPauliGroupElement.checkMatrix]
+      fin_cases k <;>
+        simp only [generatorsList, List.get_cons_succ, Z1, Z2, Z3, X1, X2, X3] <;> decide)
     v hv
   have h_sum : Finset.sum {Fin.natAdd 7 1, Fin.natAdd 7 2, Fin.natAdd 7 3} (fun j => v j) =
       v (Fin.natAdd 7 1) + v (Fin.natAdd 7 2) + v (Fin.natAdd 7 3) := by
@@ -502,6 +526,7 @@ private lemma sympSpan_ZPart_relation (v : Fin (7 + 7) → ZMod 2)
   rw [h_sum] at this
   exact this
 
+/-- Logical Z ∉ subgroup (symplectic vector violates Z-part relation). -/
 theorem logicalZ_not_mem_subgroup : logicalZ ∉ subgroup :=
   NQubitPauliGroupElement.not_mem_subgroup_of_symp_not_in_span generatorsList subgroup
     (by rw [subgroup, listToSet_generatorsList]) AllPhaseZero_generatorsList logicalZ (by rfl)
